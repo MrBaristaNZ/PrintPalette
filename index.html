@@ -1251,6 +1251,57 @@
                 <button class="action-btn project" onclick="saveProject()">💾 Save Project</button>
                 <button class="action-btn project" onclick="loadProject()">📂 Load Project</button>
             </div>
+            
+            <!-- Load from URL Section -->
+            <div style="margin: 12px 0; padding: 12px; background: rgba(0, 245, 255, 0.05); border: 1px solid var(--border); border-radius: 8px;">
+                <div style="font-size: 10px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase; margin-bottom: 6px;">Load from URL:</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="project-url-input" placeholder="https://raw.githubusercontent.com/.../project.stlproject" 
+                           style="flex: 1; padding: 8px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 11px; font-family: 'Azeret Mono', monospace;">
+                    <button class="action-btn project" onclick="loadProjectFromURL()" style="white-space: nowrap; padding: 8px 12px;">
+                        🌐 Load
+                    </button>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 4px; opacity: 0.7;">Paste GitHub raw URL or direct .stlproject link</div>
+            </div>
+            
+            <!-- Browse GitHub Projects -->
+            <div style="margin: 12px 0; padding: 12px; background: rgba(138, 85, 247, 0.05); border: 1px solid var(--border); border-radius: 8px;">
+                <div style="font-size: 10px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase; margin-bottom: 6px;">Browse GitHub Projects:</div>
+                <select id="github-project-dropdown" onchange="loadSelectedGitHubProject()" 
+                        style="width: 100%; padding: 10px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: 'Rajdhani', sans-serif; cursor: pointer; font-size: 12px; margin-bottom: 8px;">
+                    <option value="">Select a project...</option>
+                </select>
+                <button class="action-btn project" onclick="refreshGitHubProjects()" style="width: 100%; padding: 8px; font-size: 11px;">
+                    🔄 Refresh List
+                </button>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 6px; opacity: 0.7;">
+                    <span id="github-repo-info">Configure repo below ↓</span>
+                </div>
+                <details style="margin-top: 8px;">
+                    <summary style="cursor: pointer; font-size: 10px; color: var(--accent-cyan); font-family: 'Azeret Mono', monospace;">⚙️ Repository Settings</summary>
+                    <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                        <div style="font-size: 9px; color: var(--accent-yellow); background: rgba(255, 215, 0, 0.1); padding: 6px; border-radius: 4px; margin-bottom: 4px;">
+                            💡 <strong>How to find your path:</strong><br>
+                            1. Open your GitHub repo<br>
+                            2. Navigate to the folder with .stlproject files<br>
+                            3. Copy path from URL after /tree/main/
+                        </div>
+                        <input type="text" id="github-owner" placeholder="Repository Owner (e.g. MrBaristaNZ)" value="MrBaristaNZ"
+                               style="padding: 6px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 10px;">
+                        <input type="text" id="github-repo" placeholder="Repository Name (e.g. printpalette)" value="printpalette"
+                               style="padding: 6px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 10px;">
+                        <input type="text" id="github-path" placeholder="Path (e.g. Projects/Blasters)" value="Projects/Blasters/Leedle Dynamics"
+                               style="padding: 6px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 10px;">
+                        <button onclick="testGitHubPath()" style="padding: 6px; background: var(--accent-cyan); color: var(--bg-primary); border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600;">
+                            🧪 Test Path
+                        </button>
+                        <button onclick="saveGitHubSettings()" style="padding: 6px; background: var(--accent-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600;">
+                            💾 Save & Refresh
+                        </button>
+                    </div>
+                </details>
+            </div>
 
             <!-- Action Buttons -->
             <div class="action-buttons">
@@ -1285,16 +1336,11 @@
                         <option value="">Select a group...</option>
                     </select>
                     
-                    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 4px;">
-                        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
-                            <div style="font-size: 9px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase;">Group Colour:</div>
-                            <select id="group-color-dropdown" onchange="updateGroupColorFromDropdown()" style="padding: 8px; border-radius: 6px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-family: 'Rajdhani', sans-serif; cursor: pointer; font-size: 12px;">
-                                <option value="">Pick a colour</option>
-                            </select>
-                        </div>
-                        <button class="apply-multi-btn" id="apply-group-color-btn" onclick="applyColorToGroup()" disabled>
-                            Select Group First
-                        </button>
+                    <div style="margin-bottom: 8px;">
+                        <div style="font-size: 9px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase; margin-bottom: 4px;">Group Colour:</div>
+                        <select id="group-color-dropdown" onchange="updateGroupColorFromDropdown()" disabled style="width: 100%; padding: 10px; border-radius: 6px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-family: 'Rajdhani', sans-serif; cursor: pointer; font-size: 12px;">
+                            <option value="">Pick a colour</option>
+                        </select>
                     </div>
                     
                     <button class="action-btn secondary" onclick="deleteGroup()" id="delete-group-btn" disabled style="width: 100%; background: rgba(255, 0, 107, 0.1); border-color: var(--accent-magenta); color: var(--accent-magenta);">
@@ -1419,6 +1465,14 @@
             updateProjectDisplay();
             
             window.addEventListener('resize', onWindowResize);
+            
+            // Check if project URL is in URL parameters
+            checkURLParameters();
+            
+            // Initialize GitHub project browser
+            setTimeout(() => {
+                initGitHubBrowser();
+            }, 500);
         }
 
         function updateProjectDisplay() {
@@ -1673,6 +1727,471 @@
             };
             input.click();
         }
+        
+        // Load project from URL (GitHub, direct link, etc.)
+        async function loadProjectFromURL(urlParam = null) {
+            let url = urlParam;
+            
+            // If no URL provided, get from input field
+            if (!url) {
+                const urlInput = document.getElementById('project-url-input');
+                url = urlInput ? urlInput.value.trim() : '';
+            }
+            
+            if (!url) {
+                showToast('⚠️ Please enter a project URL');
+                return;
+            }
+            
+            // Validate URL
+            try {
+                new URL(url);
+            } catch (e) {
+                showToast('⚠️ Invalid URL format');
+                return;
+            }
+            
+            showToast('🌐 Loading project from URL...');
+            console.log('=== Loading Project from URL ===');
+            console.log('URL:', url);
+            
+            try {
+                // Fetch the project file
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                console.log('Downloaded blob, size:', blob.size);
+                
+                // Convert blob to file for consistent handling
+                const file = new File([blob], 'project.stlproject', { type: 'application/zip' });
+                
+                // Load using existing logic
+                const zip = await JSZip.loadAsync(file);
+                console.log('ZIP loaded successfully');
+                
+                // Read project configuration
+                const projectJsonFile = zip.file("project.json");
+                if (!projectJsonFile) {
+                    throw new Error('Invalid project file - missing project.json');
+                }
+
+                const projectJsonText = await projectJsonFile.async("text");
+                const projectData = JSON.parse(projectJsonText);
+                console.log('Project data:', projectData);
+
+                // Validate project data
+                if (!projectData.parts || projectData.parts.length === 0) {
+                    throw new Error('Project has no parts');
+                }
+
+                // Clear existing parts
+                clearAllSilent();
+
+                // Set project name
+                document.getElementById('project-name').value = projectData.projectName;
+                updateProjectDisplay();
+
+                // Load STL files
+                const stlFolder = zip.folder("stl_files");
+                if (!stlFolder) {
+                    throw new Error('Invalid project file - missing stl_files folder');
+                }
+                
+                console.log(`Loading ${projectData.parts.length} parts...`);
+                
+                const loadedParts = [];
+                const failedParts = [];
+
+                // Load parts sequentially
+                for (const partData of projectData.parts) {
+                    try {
+                        console.log(`Loading part: ${partData.name} (${partData.fileName})`);
+                        
+                        const stlFile = stlFolder.file(partData.fileName);
+                        if (!stlFile) {
+                            console.warn(`STL file not found: ${partData.fileName}`);
+                            failedParts.push(partData.name);
+                            continue;
+                        }
+                        
+                        const arrayBuffer = await stlFile.async("arraybuffer");
+                        await loadSTLFromBuffer(arrayBuffer, partData);
+                        loadedParts.push(partData.name);
+                        
+                    } catch (partErr) {
+                        console.error(`Error loading part ${partData.name}:`, partErr);
+                        failedParts.push(partData.name);
+                    }
+                }
+
+                // Restore groups if present
+                if (projectData.groups && Array.isArray(projectData.groups)) {
+                    groups = projectData.groups.map(g => ({
+                        name: g.name,
+                        parts: new Set(g.parts),
+                        color: g.color || '#ffffff'
+                    }));
+                    renderGroupSelector();
+                    console.log('Groups restored:', groups.length);
+                }
+                
+                frameModel();
+                
+                if (failedParts.length === 0) {
+                    showToast(`✓ Project "${projectData.projectName}" loaded from URL!`);
+                } else {
+                    showToast(`⚠️ Loaded ${loadedParts.length}/${projectData.parts.length} parts (${failedParts.length} failed)`);
+                    console.warn('Failed parts:', failedParts);
+                }
+                
+                // Clear URL input on success
+                const urlInput = document.getElementById('project-url-input');
+                if (urlInput && !urlParam) urlInput.value = '';
+                
+                console.log('=== Project Load from URL Complete ===');
+
+            } catch (err) {
+                console.error('=== Load Project from URL Error ===');
+                console.error('Error:', err);
+                console.error('Stack:', err.stack);
+                
+                let errorMsg = err.message;
+                
+                // Provide helpful error messages
+                if (err.message.includes('Failed to fetch')) {
+                    errorMsg = 'Cannot load file. Check: 1) URL is correct, 2) File is publicly accessible, 3) CORS is enabled';
+                }
+                
+                showToast('⚠️ Error loading from URL: ' + errorMsg);
+                
+                // Show detailed error
+                const errorDetail = document.createElement('div');
+                errorDetail.style.cssText = 'position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 107, 0.95); color: white; padding: 20px; border-radius: 8px; z-index: 10000; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);';
+                errorDetail.innerHTML = `
+                    <strong style="font-size: 18px;">Load from URL Error:</strong><br><br>
+                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; margin: 10px 0; word-break: break-all;">
+                        ${errorMsg}
+                    </div>
+                    <div style="font-size: 11px; opacity: 0.9; margin: 10px 0;">
+                        <strong>For GitHub files:</strong><br>
+                        Use "raw" URL format:<br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 3px; display: block; margin: 4px 0;">
+                        https://raw.githubusercontent.com/<br>username/repo/branch/file.stlproject
+                        </code>
+                    </div>
+                    <small style="opacity: 0.8;">Check console (F12) for detailed error information</small><br><br>
+                    <button onclick="this.parentElement.remove()" style="width: 100%; margin-top: 10px; padding: 10px; background: white; color: #ff006b; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Close</button>
+                `;
+                document.body.appendChild(errorDetail);
+                setTimeout(() => errorDetail.remove(), 20000);
+            }
+        }
+        
+        // Check URL parameters on page load for auto-loading
+        function checkURLParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectURL = urlParams.get('project');
+            
+            if (projectURL) {
+                console.log('Auto-loading project from URL parameter:', projectURL);
+                // Wait a bit for page to fully load
+                setTimeout(() => {
+                    loadProjectFromURL(projectURL);
+                }, 1000);
+            }
+        }
+        
+        // GitHub Repository Browser Functions
+        function getGitHubSettings() {
+            return {
+                owner: localStorage.getItem('github-owner') || document.getElementById('github-owner')?.value || 'MrBaristaNZ',
+                repo: localStorage.getItem('github-repo') || document.getElementById('github-repo')?.value || 'printpalette',
+                path: localStorage.getItem('github-path') || document.getElementById('github-path')?.value || 'Projects/Blasters/Leedle Dynamics'
+            };
+        }
+        
+        function saveGitHubSettings() {
+            const owner = document.getElementById('github-owner').value.trim();
+            const repo = document.getElementById('github-repo').value.trim();
+            const path = document.getElementById('github-path').value.trim();
+            
+            if (!owner || !repo) {
+                showToast('⚠️ Owner and Repository are required');
+                return;
+            }
+            
+            localStorage.setItem('github-owner', owner);
+            localStorage.setItem('github-repo', repo);
+            localStorage.setItem('github-path', path);
+            
+            showToast('✓ Settings saved');
+            refreshGitHubProjects();
+        }
+        
+        async function testGitHubPath() {
+            const owner = document.getElementById('github-owner').value.trim();
+            const repo = document.getElementById('github-repo').value.trim();
+            const path = document.getElementById('github-path').value.trim();
+            
+            if (!owner || !repo) {
+                showToast('⚠️ Owner and Repository are required');
+                return;
+            }
+            
+            console.log('=== Testing GitHub Path ===');
+            console.log('Owner:', owner);
+            console.log('Repo:', repo);
+            console.log('Path:', path);
+            
+            // Encode path properly
+            const pathSegments = path ? path.split('/').map(seg => encodeURIComponent(seg.trim())) : [];
+            const encodedPath = pathSegments.join('/');
+            
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
+            console.log('Full API URL:', apiUrl);
+            
+            showToast('🧪 Testing path...');
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (response.status === 200) {
+                    const data = await response.json();
+                    const fileCount = Array.isArray(data) ? data.length : 1;
+                    const stlProjects = Array.isArray(data) ? data.filter(f => f.name.endsWith('.stlproject')).length : 0;
+                    
+                    console.log('Success! Found', fileCount, 'items');
+                    console.log('STL projects:', stlProjects);
+                    
+                    showToast(`✓ Path works! Found ${fileCount} files (${stlProjects} .stlproject)`);
+                    
+                    // Show detailed info
+                    const infoDiv = document.createElement('div');
+                    infoDiv.style.cssText = 'position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(0, 255, 136, 0.95); color: white; padding: 20px; border-radius: 8px; z-index: 10000; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);';
+                    infoDiv.innerHTML = `
+                        <strong style="font-size: 16px;">✓ Path Test Successful!</strong><br><br>
+                        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; font-size: 11px; font-family: monospace;">
+                            ${owner}/${repo}/${path}
+                        </div><br>
+                        <strong>Found:</strong> ${fileCount} total files<br>
+                        <strong>.stlproject files:</strong> ${stlProjects}<br><br>
+                        ${stlProjects > 0 ? '✅ Ready to use! Click "Save & Refresh"' : '⚠️ No .stlproject files in this folder'}
+                        <br><br>
+                        <button onclick="this.parentElement.remove()" style="width: 100%; padding: 10px; background: white; color: #00ff88; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Close</button>
+                    `;
+                    document.body.appendChild(infoDiv);
+                    setTimeout(() => infoDiv.remove(), 10000);
+                    
+                } else if (response.status === 404) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('404 error:', errorData);
+                    
+                    showToast('❌ Path not found');
+                    
+                    // Show help
+                    const helpDiv = document.createElement('div');
+                    helpDiv.style.cssText = 'position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 107, 0.95); color: white; padding: 20px; border-radius: 8px; z-index: 10000; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);';
+                    helpDiv.innerHTML = `
+                        <strong style="font-size: 16px;">❌ Path Not Found</strong><br><br>
+                        <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; font-size: 11px; font-family: monospace; word-break: break-all;">
+                            ${apiUrl}
+                        </div><br>
+                        <strong>Possible issues:</strong><br>
+                        • Owner/repo name wrong<br>
+                        • Folder path wrong (case-sensitive!)<br>
+                        • Folder doesn't exist<br>
+                        • Repository is private<br><br>
+                        <strong>How to find correct path:</strong><br>
+                        1. Open your repo on GitHub<br>
+                        2. Navigate to the folder<br>
+                        3. Look at URL: <code style="background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 3px;">.../tree/main/YOUR/PATH</code><br>
+                        4. Copy "YOUR/PATH" part<br><br>
+                        <button onclick="this.parentElement.remove()" style="width: 100%; padding: 10px; background: white; color: #ff006b; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Close</button>
+                    `;
+                    document.body.appendChild(helpDiv);
+                    setTimeout(() => helpDiv.remove(), 20000);
+                    
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                showToast('❌ Test failed: ' + error.message);
+            }
+            
+            console.log('=== Test Complete ===');
+        }
+        
+        function loadGitHubSettings() {
+            const settings = getGitHubSettings();
+            
+            const ownerInput = document.getElementById('github-owner');
+            const repoInput = document.getElementById('github-repo');
+            const pathInput = document.getElementById('github-path');
+            
+            if (ownerInput) ownerInput.value = settings.owner;
+            if (repoInput) repoInput.value = settings.repo;
+            if (pathInput) pathInput.value = settings.path;
+            
+            // Update info display
+            const infoSpan = document.getElementById('github-repo-info');
+            if (infoSpan) {
+                infoSpan.textContent = `${settings.owner}/${settings.repo}/${settings.path}`;
+            }
+        }
+        
+        async function refreshGitHubProjects() {
+            const dropdown = document.getElementById('github-project-dropdown');
+            const settings = getGitHubSettings();
+            
+            if (!dropdown) return;
+            
+            // Clear dropdown
+            dropdown.innerHTML = '<option value="">Loading...</option>';
+            dropdown.disabled = true;
+            
+            console.log('=== Fetching GitHub Projects ===');
+            console.log('Settings:', settings);
+            
+            try {
+                // Encode path properly - each segment separately
+                const pathSegments = settings.path.split('/').map(seg => encodeURIComponent(seg.trim()));
+                const encodedPath = pathSegments.join('/');
+                
+                // Construct GitHub API URL
+                const apiUrl = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${encodedPath}`;
+                console.log('API URL:', apiUrl);
+                console.log('Encoded path:', encodedPath);
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response OK:', response.ok);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // Try to get more specific error
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error('404 Error details:', errorData);
+                        
+                        throw new Error(`Path not found: "${settings.path}"\n\nCheck:\n1. Path spelling (case-sensitive)\n2. Folder exists in repo\n3. No extra spaces`);
+                    }
+                    if (response.status === 403) {
+                        throw new Error('Rate limit exceeded. Wait a minute and try again.');
+                    }
+                    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+                }
+                
+                const files = await response.json();
+                console.log('Files received:', files);
+                console.log('Total files:', Array.isArray(files) ? files.length : 'Not an array');
+                
+                // Handle non-array response (might be a single file)
+                if (!Array.isArray(files)) {
+                    throw new Error('Invalid response from GitHub. Check if path points to a folder (not a file).');
+                }
+                
+                // Filter for .stlproject files
+                const projects = files.filter(file => 
+                    file.type === 'file' && 
+                    file.name.toLowerCase().endsWith('.stlproject')
+                );
+                
+                console.log('Project files found:', projects.length);
+                console.log('Project names:', projects.map(p => p.name));
+                
+                // Populate dropdown
+                dropdown.innerHTML = '<option value="">Select a project...</option>';
+                
+                if (projects.length === 0) {
+                    // Show what files were found
+                    const fileList = files.map(f => f.name).join(', ');
+                    console.log('All files in folder:', fileList);
+                    dropdown.innerHTML += `<option value="" disabled>No .stlproject files found (Found: ${files.length} other files)</option>`;
+                } else {
+                    projects.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project.download_url;
+                        option.textContent = project.name.replace('.stlproject', '');
+                        dropdown.appendChild(option);
+                    });
+                }
+                
+                dropdown.disabled = false;
+                
+                if (projects.length === 0) {
+                    showToast(`⚠️ No .stlproject files in this folder`);
+                } else {
+                    showToast(`✓ Found ${projects.length} project(s)`);
+                }
+                
+                // Update info display
+                const infoSpan = document.getElementById('github-repo-info');
+                if (infoSpan) {
+                    if (projects.length === 0) {
+                        infoSpan.innerHTML = `<span style="color: var(--accent-yellow);">⚠</span> ${files.length} files found, but no .stlproject files`;
+                    } else {
+                        infoSpan.innerHTML = `<span style="color: var(--accent-green);">✓</span> ${projects.length} project(s) in ${settings.owner}/${settings.repo}`;
+                    }
+                }
+                
+                console.log('=== GitHub Fetch Complete ===');
+                
+            } catch (error) {
+                console.error('=== Error fetching GitHub projects ===');
+                console.error('Error:', error);
+                console.error('Message:', error.message);
+                console.error('Stack:', error.stack);
+                
+                dropdown.innerHTML = '<option value="">Error - Check settings</option>';
+                dropdown.disabled = false;
+                
+                showToast('⚠️ ' + error.message.split('\n')[0]);
+                
+                // Update info display
+                const infoSpan = document.getElementById('github-repo-info');
+                if (infoSpan) {
+                    infoSpan.innerHTML = `<span style="color: var(--accent-magenta);">✗</span> Error - Check console (F12)`;
+                }
+            }
+        }
+        
+        function loadSelectedGitHubProject() {
+            const dropdown = document.getElementById('github-project-dropdown');
+            const url = dropdown ? dropdown.value : '';
+            
+            if (!url) return;
+            
+            console.log('Loading selected GitHub project:', url);
+            loadProjectFromURL(url);
+            
+            // Reset dropdown selection
+            setTimeout(() => {
+                if (dropdown) dropdown.value = '';
+            }, 500);
+        }
+        
+        // Initialize GitHub browser on page load
+        function initGitHubBrowser() {
+            loadGitHubSettings();
+            refreshGitHubProjects();
+        }
 
         function loadSTLFromBuffer(arrayBuffer, partData) {
             return new Promise((resolve, reject) => {
@@ -1916,7 +2435,10 @@
             const selector = document.getElementById('group-selector');
             if (!selector) return;
             
-            selector.innerHTML = '<option value="">Select Group</option>';
+            // Remember current selection
+            const currentIndex = selector.value;
+            
+            selector.innerHTML = '<option value="">Select a group...</option>';
             
             groups.forEach((group, i) => {
                 const color = group.color || '#ffffff';
@@ -1928,11 +2450,19 @@
                 selector.appendChild(option);
             });
             
+            // Restore selection if it was set
+            if (selectedGroup && currentIndex !== '') {
+                // Find the index of the currently selected group
+                const index = groups.findIndex(g => g.name === selectedGroup.name);
+                if (index !== -1) {
+                    selector.value = index;
+                }
+            }
+            
             console.log('Group selector rendered with', groups.length, 'groups');
         }
 
         function selectGroup(index) {
-            const applyBtn = document.getElementById('apply-group-color-btn');
             const deleteBtn = document.getElementById('delete-group-btn');
             const colorDropdown = document.getElementById('group-color-dropdown');
             
@@ -1944,43 +2474,44 @@
                     colorDropdown.value = '';
                     colorDropdown.style.backgroundColor = 'var(--bg-primary)';
                     colorDropdown.style.color = 'var(--text-primary)';
+                    colorDropdown.style.borderColor = 'var(--border)';
+                    colorDropdown.style.borderWidth = '1px';
+                    colorDropdown.disabled = true;
                 }
                 
-                if (applyBtn) {
-                    applyBtn.disabled = true;
-                    applyBtn.textContent = 'Select Group First';
-                    applyBtn.style.background = 'rgba(0, 255, 136, 0.1)';
-                    applyBtn.style.borderColor = 'var(--accent-green)';
-                }
                 if (deleteBtn) deleteBtn.disabled = true;
                 return;
             }
             
             selectedGroup = groups[parseInt(index)];
+            console.log('Group selected:', selectedGroup.name, 'Parts:', Array.from(selectedGroup.parts), 'Color:', selectedGroup.color);
             
-            // Load the group's current color into the dropdown
-            if (colorDropdown && selectedGroup.color) {
-                colorDropdown.value = selectedGroup.color;
-                // Set dropdown background to group's color
-                colorDropdown.style.backgroundColor = selectedGroup.color;
-                colorDropdown.style.color = '#fff';
-                colorDropdown.style.fontWeight = '600';
-                updateGroupColorFromDropdown();
+            // Enable colour dropdown for this group
+            if (colorDropdown) {
+                colorDropdown.disabled = false;
+                
+                // Load the group's current colour if it has one
+                if (selectedGroup.color) {
+                    colorDropdown.value = selectedGroup.color;
+                    colorDropdown.style.backgroundColor = selectedGroup.color;
+                    colorDropdown.style.color = '#fff';
+                    colorDropdown.style.fontWeight = '600';
+                    colorDropdown.style.borderColor = selectedGroup.color;
+                    colorDropdown.style.borderWidth = '2px';
+                } else {
+                    // No colour yet - reset to default
+                    colorDropdown.value = '';
+                    colorDropdown.style.backgroundColor = 'var(--bg-primary)';
+                    colorDropdown.style.color = 'var(--text-primary)';
+                    colorDropdown.style.borderColor = 'var(--border)';
+                    colorDropdown.style.borderWidth = '1px';
+                }
             }
             
-            if (applyBtn && colorDropdown) {
-                applyBtn.disabled = false;
-                const color = colorDropdown.value || selectedGroup.color || '#ffffff';
-                applyBtn.textContent = `Apply ${color.toUpperCase()} to "${selectedGroup.name}"`;
-                applyBtn.style.background = `linear-gradient(135deg, ${color}22, ${color}44)`;
-                applyBtn.style.borderColor = color;
-            }
-            
+            // Enable delete button
             if (deleteBtn) {
                 deleteBtn.disabled = false;
             }
-            
-            console.log('Group selected:', selectedGroup.name, 'Parts:', Array.from(selectedGroup.parts), 'Color:', selectedGroup.color);
         }
 
         function animatePartColorChange(mesh, targetColor, duration = 500) {
@@ -2014,9 +2545,8 @@
                 return;
             }
             
-            console.log('=== Apply Color to Group ===');
+            console.log('=== Manual Re-apply Color to Group ===');
             console.log('Group:', selectedGroup.name);
-            console.log('Color dropdown element:', colorDropdown);
             console.log('Color value:', selectedColor);
             
             let successCount = 0;
@@ -2040,8 +2570,8 @@
             selectedGroup.color = selectedColor;
             renderGroupSelector();
             
-            showToast(`✓ Applied ${selectedColor} to "${selectedGroup.name}" (${successCount} parts)`);
-            console.log('Color applied successfully');
+            showToast(`✓ Re-applied ${selectedColor.toUpperCase()} to "${selectedGroup.name}" (${successCount} parts)`);
+            console.log('Color re-applied successfully');
         }
 
         function updateGroupColorFromDropdown() {
@@ -2068,13 +2598,33 @@
             dropdown.style.borderColor = color;
             dropdown.style.borderWidth = '2px';
 
+            // AUTO-APPLY: If a group is selected, apply colour immediately!
             if (selectedGroup) {
-                const applyBtn = document.getElementById('apply-group-color-btn');
-                if (applyBtn) {
-                    applyBtn.textContent = `Apply ${color.toUpperCase()} to "${selectedGroup.name}"`;
-                    applyBtn.style.background = `linear-gradient(135deg, ${color}22, ${color}44)`;
-                    applyBtn.style.borderColor = color;
-                }
+                console.log('Auto-applying colour to group:', selectedGroup.name);
+                
+                let successCount = 0;
+                
+                // Apply to all parts in the group
+                selectedGroup.parts.forEach(idx => {
+                    if (parts[idx]) {
+                        animatePartColorChange(parts[idx], color);
+                        parts[idx].userData.color = color;
+                        
+                        const preview = document.getElementById(`preview-${idx}`);
+                        const hex = document.getElementById(`hex-${idx}`);
+                        const colorInput = preview?.querySelector('input');
+                        if (preview) preview.style.background = color;
+                        if (hex) hex.textContent = color;
+                        if (colorInput) colorInput.value = color;
+                        successCount++;
+                    }
+                });
+                
+                // Save color to group
+                selectedGroup.color = color;
+                renderGroupSelector();
+                
+                showToast(`✓ ${color.toUpperCase()} applied to "${selectedGroup.name}" (${successCount} parts)`);
             }
             
             console.log('Colour selected from dropdown:', color);
