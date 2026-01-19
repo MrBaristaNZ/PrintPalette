@@ -1,184 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>STL Assembly Viewer with Group Colors</title>
-  <style>
-    html, body { margin: 0; overflow: hidden; font-family: sans-serif; background: #111; color: #eee; }
-    canvas { display: block; }
-    #ui {
-      position: fixed; top: 10px; left: 10px; z-index: 1;
-      background: #222; padding: 12px; border-radius: 8px; max-height: 95vh; overflow-y: auto;
-    }
-    button, select {
-      background: #444; color: #fff; border: 1px solid #666; padding: 6px; margin: 4px 0;
-    }
-    #group-color-dropdown {
-      width: 100%; padding: 6px; margin: 6px 0;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STL Assembly Studio – Full</title>
+
+<!-- THREE.JS & UTILS -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/DragControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/STLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/exporters/STLExporter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+/* —— GENERAL RESET & STYLES —— */
+body { margin: 0; padding: 0; font-family: sans-serif; background: #0a0e17; color: #e8edf4; overflow: hidden; }
+button, input, select { font-family: sans-serif; }
+#canvas-container { width: 100%; height: 100vh; display: block; }
+
+/* —— SIDEBAR —— */
+#sidebar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 320px;
+  background: #141922; overflow-y: auto; border-right: 2px solid rgba(0,245,255,0.15);
+  padding: 16px;
+}
+#sidebar h2 { margin: 8px 0; color: #00f5ff; font-size: 18px; }
+.section { margin-bottom: 16px; }
+
+/* BUTTON STYLES */
+.btn { display: block; width: 100%; padding: 8px 0; margin: 4px 0; cursor: pointer; background: #1e2530; border: 1px solid #0f1520; color: #e8edf4; text-align:center; }
+.btn:hover { background: #080b10; border-color: #00f5ff; color: #00f5ff; }
+
+.part-card { background:#1e2530; border:1px solid rgba(0,245,255,0.15); margin-bottom:8px; padding:8px; border-radius:6px; }
+
+/* COLOR PREVIEW */
+.color-preview-small { width:20px;height:20px;display:inline-block;border:1px solid #444;vertical-align:middle;margin-right:4px; }
+</style>
 </head>
 <body>
-  <div id="ui">
-    <input type="file" id="file-input" multiple accept=".stl" />
-    <div>
-      <select id="group-selector">
-        <option value="">Select Group</option>
-      </select>
-      <select id="group-color-dropdown">
-        <option value="">Pick Color</option>
-      </select>
-      <button id="apply-group-color-btn">Apply to Group</button>
-      <button onclick="randomizeGroupColors()">🎲 Randomize Group Colors</button>
-    </div>
+
+<div id="sidebar">
+  <h2>STL Assembly Studio</h2>
+
+  <div class="section">
+    <input type="file" id="file-input" accept=".stl,.stlproject" multiple />
+    <button class="btn" onclick="clearAll()">Clear All</button>
+    <button class="btn" onclick="exportAssembly()">Export Assembly .STL</button>
+    <button class="btn" onclick="exportImage()">Export Image</button>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/DragControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/STLLoader.js"></script>
-  <script>
-    let scene, camera, renderer, controls, dragControls;
-    let parts = [], groups = [], selectedGroup = null;
-    let animationFrameId = null;
 
-    const presetColors = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#46f0f0','#f032e6'];
+  <!-- GROUP MANAGEMENT -->
+  <div class="section">
+    <h3>Group Management</h3>
+    <input type="text" id="new-group-name" placeholder="Group Name" style="width:100%;padding:6px;">
+    <button class="btn" onclick="createGroup()">Create Group</button>
 
-    init();
-    animate();
+    <select id="group-selector" style="width:100%;padding:6px;margin:6px 0;" onchange="selectGroup(this.value)">
+      <option value="">Select Group</option>
+    </select>
 
-    function init() {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-      camera.position.set(100, 100, 100);
+    <input type="color" id="group-color-picker" value="#ff006b">
+    <button class="btn" id="apply-group-color-btn" onclick="applyColorToGroup()">Apply Color to Group</button>
+    <button class="btn" onclick="randomizeGroupColors()">Randomize Group Colors</button>
+  </div>
 
-      renderer = new THREE.WebGLRenderer({antialias: true});
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+  <!-- PARTS -->
+  <div class="section">
+    <h3>Parts</h3>
+    <div id="parts-container"></div>
+  </div>
 
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
+  <!-- INFO -->
+  <div class="section">
+    <div><strong>Bounding Box:</strong></div>
+    <div id="bounding-info"></div>
+  </div>
 
-      document.getElementById('file-input').addEventListener('change', handleFiles);
-      document.getElementById('group-selector').addEventListener('change', e => {
-        selectedGroup = groups[e.target.value];
-      });
-      document.getElementById('group-color-dropdown').addEventListener('change', updateGroupColorDisplay);
-      document.getElementById('apply-group-color-btn').addEventListener('click', applyColorToGroup);
+</div>
 
-      populateColorDropdown();
-      window.addEventListener('resize', onWindowResize);
+<div id="canvas-container"></div>
+
+<script>
+
+// ============================
+// == GLOBAL STATE ============
+let scene, camera, renderer, controls, raycaster, mouse;
+let parts = [], selectedParts = new Set(), groups = [], selectedGroup = null;
+let animationFrameId = null;
+let loader, exporter;
+
+// ============================
+// == INIT SCENE ============
+function init() {
+  // Scene
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 2000);
+  camera.position.set(0,50,150);
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
+  renderer.setSize(window.innerWidth - 320, window.innerHeight);
+  document.getElementById('canvas-container').append(renderer.domElement);
+
+  // Controls
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const d = 120;
+  const light = new THREE.DirectionalLight(0xffffff,0.8);
+  light.position.set(d,d,d);
+  scene.add(light);
+
+  // Raycaster
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  loader = new THREE.STLLoader();
+  exporter = new THREE.STLExporter();
+
+  window.addEventListener('resize', onWindowResize);
+
+  animate();
+}
+
+function onWindowResize() {
+  camera.aspect = (window.innerWidth - 320)/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth -320, window.innerHeight);
+}
+
+// ============================
+// == FILE UPLOAD ============
+document.getElementById('file-input').addEventListener('change', (e)=>{
+  handleFiles(e.target.files);
+});
+
+async function handleFiles(files) {
+  for (let f of files) {
+    if (f.name.match(/\.stl$/i)) {
+      await loadSTL(f);
+    } else if (f.name.match(/\.stlproject$/i)) {
+      await loadProjectFile(f);
     }
+  }
+}
 
-    function onWindowResize() {
-      camera.aspect = window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+// ============================
+// == LOAD STL ================
+function loadSTL(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const geom = loader.parse(e.target.result);
+      const color = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+      const mat = new THREE.MeshStandardMaterial({ color });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.userData = { name: file.name.replace('.stl',''), color, visible:true };
+      scene.add(mesh);
+      parts.push(mesh);
+      addPartCard(parts.length -1);
+      updateBoundingBox();
+      resolve();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ============================
+// == PART UI ================
+function addPartCard(i) {
+  const container = document.getElementById('parts-container');
+  const part = parts[i];
+
+  const card = document.createElement('div'); card.className='part-card'; card.id = 'part-card-'+i;
+
+  card.innerHTML = `
+    <input type="checkbox" id="partsel-${i}" onchange="togglePartSelection(${i}, this.checked)">
+    <span class="color-preview-small" style="background:${part.userData.color}"></span>
+    <strong>${part.userData.name}</strong><br>
+
+    <input type="color" value="${part.userData.color}" onchange="updatePartColor(${i}, this.value)">
+    <span id="hex-${i}">${part.userData.color}</span>
+  `;
+
+  container.append(card);
+}
+
+function togglePartSelection(idx, checked) {
+  if (checked) selectedParts.add(idx); else selectedParts.delete(idx);
+}
+
+function updatePartColor(idx, color) {
+  if (!parts[idx]) return;
+  parts[idx].material.color.set(color);
+  parts[idx].userData.color = color;
+  document.getElementById('hex-'+idx).textContent = color;
+}
+
+// ============================
+// == GROUP MANAGEMENT ========
+function createGroup() {
+  const name = document.getElementById('new-group-name').value.trim();
+  if (!name) return alert('Enter group name');
+  groups.push({ name, parts: new Set(selectedParts), color:document.getElementById('group-color-picker').value });
+  renderGroupSelector();
+}
+
+function renderGroupSelector() {
+  const sel = document.getElementById('group-selector'); sel.innerHTML='<option value="">Select Group</option>';
+  groups.forEach((g,i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${g.name} (${g.parts.size})`;
+    opt.style.color = g.color;
+    sel.append(opt);
+  });
+}
+
+function selectGroup(val) {
+  if (val==='') { selectedGroup=null; return; }
+  selectedGroup = groups[val];
+}
+
+function applyColorToGroup() {
+  if (!selectedGroup) return;
+  const color = document.getElementById('group-color-picker').value;
+  selectedGroup.color = color;
+  selectedGroup.parts.forEach(idx => {
+    if (parts[idx]) updatePartColor(idx, color);
+  });
+  renderGroupSelector();
+}
+
+function randomizeGroupColors() {
+  for (let g of groups) {
+    const rand = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+    g.color = rand;
+    g.parts.forEach(idx => { if (parts[idx]) updatePartColor(idx, rand); });
+  }
+  renderGroupSelector();
+}
+
+// ============================
+// == SAVE / LOAD PROJECT ========
+async function saveProject() {
+  if (!parts.length) return;
+  const zip = new JSZip();
+  const stlFolder = zip.folder("stl_files");
+  const proj = { parts:[], groups };
+
+  // save STLs
+  for (let p of parts) {
+    const geom = p.geometry.clone(), mesh = new THREE.Mesh(geom);
+    const data = exporter.parse(mesh,{binary:true});
+    stlFolder.file(p.userData.name+".stl", data, {binary:true});
+    proj.parts.push({
+      name:p.userData.name,
+      color:p.userData.color
+    });
+  }
+  zip.file("project.json", JSON.stringify(proj,null,2));
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download="project.stlproject"; a.click();
+}
+
+async function loadProjectFile(file) {
+  const zip = await JSZip.loadAsync(file);
+  const projText = await zip.file("project.json").async("text");
+  const data = JSON.parse(projText);
+  clearScene();
+  for (let partData of data.parts) {
+    const stl = zip.file("stl_files/"+partData.name+".stl");
+    if (stl) {
+      const buffer = await stl.async("arraybuffer");
+      parts.push(loader.parse(buffer));
     }
+  }
+  groups = data.groups || [];
+  renderGroupSelector();
+}
 
-    function populateColorDropdown() {
-      const dropdown = document.getElementById('group-color-dropdown');
-      presetColors.forEach(color => {
-        const opt = document.createElement('option');
-        opt.value = color;
-        opt.textContent = color;
-        opt.style.background = color;
-        dropdown.appendChild(opt);
-      });
-    }
+// ============================
+// == EXPORT & CLEAR ============
+function exportAssembly() {
+  const visibleParts = parts.filter(p=>p.userData.visible!==false);
+  if (!visibleParts.length) return alert("No visible parts!");
+  const grp = new THREE.Group();
+  visibleParts.forEach(p => {
+    const clone = p.clone(); clone.updateMatrixWorld();
+    grp.add(clone);
+  });
+  const res = exporter.parse(grp,{binary:true});
+  const blob = new Blob([res],{type:"application/octet-stream"});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download="assembly.stl"; a.click();
+}
 
-    function updateGroupColorDisplay() {
-      const color = document.getElementById('group-color-dropdown').value;
-      const btn = document.getElementById('apply-group-color-btn');
-      if (selectedGroup && color) {
-        btn.textContent = `Apply ${color} to ${selectedGroup.name}`;
-        btn.style.background = color;
-        btn.style.color = '#fff';
-      }
-    }
+function exportImage() {
+  renderer.render(scene,camera);
+  const a=document.createElement('a');
+  a.href=renderer.domElement.toDataURL("image/png");
+  a.download="snapshot.png"; a.click();
+}
 
-    function animate() {
-      animationFrameId = requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
+function clearAll() {
+  if (!confirm("Clear all parts?")) return;
+  clearScene();
+  document.getElementById("parts-container").innerHTML='';
+  parts=[]; selectedParts.clear(); groups=[]; selectedGroup=null;
+  renderGroupSelector(); updateBoundingBox();
+}
 
-    function stopAnimation() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    }
+function clearScene() {
+  parts.forEach(p => {
+    p.geometry.dispose(); p.material.dispose(); scene.remove(p);
+  });
+}
 
-    function clearScene() {
-      parts.forEach(mesh => {
-        mesh.geometry.dispose();
-        if (mesh.material.map) mesh.material.map.dispose();
-        mesh.material.dispose();
-        scene.remove(mesh);
-      });
-      parts = [];
-      if (dragControls) {
-        dragControls.deactivate();
-        dragControls = null;
-      }
-    }
+// ============================
+// == BOUNDING BOX ============
+function updateBoundingBox() {
+  if (!parts.length) return;
+  const box = new THREE.Box3();
+  parts.forEach(p => box.expandByObject(p));
+  const size = box.getSize(new THREE.Vector3());
+  document.getElementById('bounding-info').textContent=
+    `X:${size.x.toFixed(1)}, Y:${size.y.toFixed(1)}, Z:${size.z.toFixed(1)}`;
+}
 
-    function handleFiles(event) {
-      clearScene();
-      const loader = new THREE.STLLoader();
-      const files = Array.from(event.target.files);
+// ============================
+// == ANIMATE LOOP ============
+function animate() {
+  animationFrameId = requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+}
 
-      files.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const geom = loader.parse(e.target.result);
-          const mat = new THREE.MeshStandardMaterial({color: 0xaaaaaa});
-          const mesh = new THREE.Mesh(geom, mat);
-          mesh.position.x = index * 30;
-          scene.add(mesh);
-          parts.push(mesh);
-        };
-        reader.readAsArrayBuffer(file);
-      });
+init();
+</script>
 
-      // Example: create default group from all
-      groups.push({ name: "All Parts", parts: new Set(files.map((_, i) => i)), color: '#aaaaaa' });
-      renderGroupSelector();
-
-      dragControls = new THREE.DragControls(parts, camera, renderer.domElement);
-    }
-
-    function renderGroupSelector() {
-      const sel = document.getElementById('group-selector');
-      sel.innerHTML = '<option value="">Select Group</option>';
-      groups.forEach((g, i) => {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = `${g.name}`;
-        opt.style.color = g.color || '#fff';
-        sel.appendChild(opt);
-      });
-    }
-
-    function applyColorToGroup() {
-      if (!selectedGroup) return;
-      const color = document.getElementById('group-color-dropdown').value;
-      selectedGroup.color = color;
-      selectedGroup.parts.forEach(idx => {
-        const mesh = parts[idx];
-        if (mesh) {
-          mesh.material.color.set(color);
-        }
-      });
-      renderGroupSelector();
-    }
-
-    function randomizeGroupColors() {
-      groups.forEach(group => {
-        const color = presetColors[Math.floor(Math.random() * presetColors.length)];
-        group.color = color;
-        group.parts.forEach(idx => {
-          parts[idx].material.color.set(color);
-        });
-      });
-      renderGroupSelector();
-    }
-  </script>
 </body>
 </html>
