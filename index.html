@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1255,8 +1256,8 @@
             <div class="action-buttons">
                 <button class="action-btn export-stl" onclick="exportAssembly()">📥 Export STL</button>
                 <button class="action-btn secondary" onclick="exportImage()">📸 Image</button>
-                <button class="action-btn secondary" onclick="randomizeColors()">🎲 Random</button>
-                <button class="action-btn secondary" onclick="clearAll()">🗑 Clear</button>
+                <button class="action-btn secondary" onclick="randomizeColors()">🎲 Random Colour</button>
+                <button class="action-btn secondary" onclick="clearAll()">📄 New Project</button>
             </div>
 
             <!-- Group Management -->
@@ -1779,6 +1780,13 @@
             selectedParts.clear();
             groups = [];
             selectedGroup = null;
+            
+            // Reset project name
+            const projectNameInput = document.getElementById('project-name');
+            if (projectNameInput) {
+                projectNameInput.value = 'Untitled Project';
+            }
+            
             rebuildUI();
             updatePartCount();
             updateBoundingBox();
@@ -2014,6 +2022,12 @@
 
         function updateGroupColorFromDropdown() {
             const dropdown = document.getElementById('group-color-dropdown');
+            
+            if (!dropdown) {
+                console.warn('Colour dropdown not found');
+                return;
+            }
+            
             const color = dropdown.value;
             
             if (!color) {
@@ -2039,7 +2053,7 @@
                 }
             }
             
-            console.log('Color selected from dropdown:', color);
+            console.log('Colour selected from dropdown:', color);
         }
 
         function colorAllGroupsRandomly() {
@@ -2566,61 +2580,97 @@
         }
 
         function loadSTL(file) {
-            const reader = new FileReader();
+            console.log('Loading STL file:', file.name);
             
-            reader.onload = (e) => {
-                const geometry = loader.parse(e.target.result);
-                const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
+            try {
+                const reader = new FileReader();
                 
-                const material = new THREE.MeshStandardMaterial({
-                    color: randomColor,
-                    metalness: 0.3,
-                    roughness: 0.4,
-                    flatShading: false
-                });
-                
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.userData = {
-                    name: file.name.replace('.stl', ''),
-                    visible: true,
-                    color: randomColor,
-                    position: { x: 0, y: 0, z: 0 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    locked: false
+                reader.onerror = (error) => {
+                    console.error('File read error:', error);
+                    showToast('❌ Error reading file: ' + file.name);
                 };
                 
-                modelGroup.add(mesh);
-                parts.push(mesh);
+                reader.onload = (e) => {
+                    try {
+                        console.log('File loaded, parsing geometry...');
+                        const geometry = loader.parse(e.target.result);
+                        console.log('Geometry parsed successfully');
+                        
+                        const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
+                        
+                        const material = new THREE.MeshStandardMaterial({
+                            color: randomColor,
+                            metalness: 0.3,
+                            roughness: 0.4,
+                            flatShading: false
+                        });
+                        
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.userData = {
+                            name: file.name.replace('.stl', ''),
+                            visible: true,
+                            color: randomColor,
+                            position: { x: 0, y: 0, z: 0 },
+                            rotation: { x: 0, y: 0, z: 0 },
+                            locked: false
+                        };
+                        
+                        console.log('Adding mesh to scene...');
+                        modelGroup.add(mesh);
+                        parts.push(mesh);
+                        
+                        console.log('Creating UI controls...');
+                        addPartControl(parts.length - 1);
+                        updatePartCount();
+                        updateBoundingBox();
+                        updateCoordinates(parts.length - 1);
+                        
+                        if (parts.length === 1) {
+                            frameModel();
+                        }
+                        
+                        showToast(`✓ Loaded: ${file.name}`);
+                        console.log('STL loaded successfully:', file.name);
+                    } catch (error) {
+                        console.error('Error processing STL:', error);
+                        showToast('❌ Error loading: ' + file.name);
+                    }
+                };
                 
-                addPartControl(parts.length - 1);
-                updatePartCount();
-                updateBoundingBox();
-                updateCoordinates(parts.length - 1);
-                
-                if (parts.length === 1) {
-                    frameModel();
-                }
-                
-                showToast(`✓ Loaded: ${file.name}`);
-            };
-            
-            reader.readAsArrayBuffer(file);
+                console.log('Starting file read...');
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error('Error in loadSTL:', error);
+                showToast('❌ Failed to load: ' + file.name);
+            }
         }
 
         function addPartControl(index) {
-            const container = document.getElementById('parts-container');
-            
-            if (parts.length === 1) {
-                container.innerHTML = '';
-            }
-            
-            const part = parts[index];
-            const card = document.createElement('div');
-            card.className = 'part-card';
-            card.style.animationDelay = `${index * 0.1}s`;
-            card.id = `part-card-${index}`;
-            
-            card.innerHTML = `
+            try {
+                console.log('Adding part control for index:', index);
+                const container = document.getElementById('parts-container');
+                
+                if (!container) {
+                    console.error('Parts container not found!');
+                    return;
+                }
+                
+                if (parts.length === 1) {
+                    container.innerHTML = '';
+                }
+                
+                if (!parts[index]) {
+                    console.error('Part not found at index:', index);
+                    return;
+                }
+                
+                const part = parts[index];
+                const card = document.createElement('div');
+                card.className = 'part-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.id = `part-card-${index}`;
+                
+                card.innerHTML = `
                 <div class="part-header">
                     <div class="part-name-section">
                         <div class="select-checkbox" id="checkbox-${index}" onclick="togglePartSelection(${index})" title="Select for multi-color"></div>
@@ -2726,6 +2776,12 @@
                 preset.onclick = () => updateColor(index, color);
                 presetsContainer.appendChild(preset);
             });
+            
+            console.log('Part control added successfully for index:', index);
+            } catch (error) {
+                console.error('Error in addPartControl:', error);
+                showToast('❌ Error creating part controls');
+            }
         }
 
         function toggleTransform(index) {
@@ -2961,9 +3017,25 @@
         }
 
         function clearAll() {
-            if (confirm('Clear all parts?')) {
+            console.log('=== clearAll() called ===');
+            console.log('Parts count:', parts.length);
+            console.log('Groups count:', groups.length);
+            
+            const message = parts.length > 0 
+                ? `Start a new project? This will clear all ${parts.length} part(s) and ${groups.length} group(s).\n\nMake sure you've saved your current project!`
+                : 'Start a new project?';
+            
+            console.log('Showing confirm dialog...');
+            const userConfirmed = confirm(message);
+            console.log('User confirmed:', userConfirmed);
+            
+            if (userConfirmed) {
+                console.log('Clearing all...');
                 clearAllSilent();
-                showToast('All parts cleared');
+                showToast('✓ New project started');
+                console.log('Clear complete');
+            } else {
+                console.log('User cancelled');
             }
         }
 
