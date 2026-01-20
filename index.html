@@ -2233,9 +2233,6 @@
                     
                     console.log(`Geometry loaded: ${geometry.attributes.position.count} vertices`);
                     
-                    // Center geometry so rotation happens around its own center
-                    geometry.center();
-                    
                     const material = new THREE.MeshStandardMaterial({
                         color: partData.color,
                         metalness: 0.3,
@@ -3335,9 +3332,6 @@
                         console.log('File loaded, parsing geometry...');
                         const geometry = loader.parse(e.target.result);
                         console.log('Geometry parsed successfully');
-                        
-                        // Center geometry so rotation happens around its own center
-                        geometry.center();
                         
                         const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
                         
