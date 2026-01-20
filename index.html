@@ -1376,6 +1376,10 @@
         <div class="viewer">
             <div id="canvas-container"></div>
             
+            <div style="position: absolute; top: 10px; left: 10px; background: rgba(10, 14, 23, 0.9); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; pointer-events: none; opacity: 0.8;">
+                💡 Double-click a part to find it in the list
+            </div>
+            
             <div class="viewer-controls">
                 <button class="control-btn" onclick="resetCamera()">Reset View</button>
                 <button class="control-btn" onclick="frameModel()">Frame All</button>
@@ -2229,6 +2233,9 @@
                     
                     console.log(`Geometry loaded: ${geometry.attributes.position.count} vertices`);
                     
+                    // Center geometry so rotation happens around its own center
+                    geometry.center();
+                    
                     const material = new THREE.MeshStandardMaterial({
                         color: partData.color,
                         metalness: 0.3,
@@ -2365,19 +2372,61 @@
                 return;
             }
             
-            if (selectedParts.has(index)) {
-                selectedParts.delete(index);
-                checkbox.classList.remove('checked');
-                checkbox.textContent = '';
-                card.classList.remove('selected');
+            // If a group is selected, manage group membership
+            if (selectedGroup) {
+                if (selectedGroup.parts.has(index)) {
+                    // Remove from group
+                    selectedGroup.parts.delete(index);
+                    checkbox.classList.remove('checked');
+                    checkbox.textContent = '';
+                    card.classList.remove('selected');
+                    showToast(`✓ Removed from "${selectedGroup.name}"`);
+                } else {
+                    // Add to group
+                    selectedGroup.parts.add(index);
+                    checkbox.classList.add('checked');
+                    checkbox.textContent = '✓';
+                    card.classList.add('selected');
+                    
+                    // Apply group color if it has one
+                    if (selectedGroup.color && parts[index]) {
+                        animatePartColorChange(parts[index], selectedGroup.color);
+                        parts[index].userData.color = selectedGroup.color;
+                        
+                        // Update dropdown
+                        const colorDropdown = document.getElementById(`part-color-dropdown-${index}`);
+                        if (colorDropdown) {
+                            colorDropdown.value = selectedGroup.color;
+                            colorDropdown.style.backgroundColor = selectedGroup.color;
+                            colorDropdown.style.color = '#fff';
+                            colorDropdown.style.borderColor = selectedGroup.color;
+                            colorDropdown.style.borderWidth = '2px';
+                        }
+                    }
+                    
+                    showToast(`✓ Added to "${selectedGroup.name}"`);
+                }
+                
+                // Update group selector to show new part count
+                renderGroupSelector();
+                
+                console.log('Group updated:', selectedGroup.name, 'Parts:', Array.from(selectedGroup.parts));
             } else {
-                selectedParts.add(index);
-                checkbox.classList.add('checked');
-                checkbox.textContent = '✓';
-                card.classList.add('selected');
+                // No group selected - normal selection for creating new group
+                if (selectedParts.has(index)) {
+                    selectedParts.delete(index);
+                    checkbox.classList.remove('checked');
+                    checkbox.textContent = '';
+                    card.classList.remove('selected');
+                } else {
+                    selectedParts.add(index);
+                    checkbox.classList.add('checked');
+                    checkbox.textContent = '✓';
+                    card.classList.add('selected');
+                }
+                
+                console.log('Selected parts:', Array.from(selectedParts));
             }
-            
-            console.log('Selected parts:', Array.from(selectedParts));
         }
 
         // Group Management Functions
@@ -2440,9 +2489,13 @@
                     card.classList.remove('selected');
                 }
             });
+            
+            // Store selected parts before clearing
+            const partsInNewGroup = Array.from(selectedParts);
             selectedParts.clear();
             
             renderGroupSelector();
+            
             showToast(`✓ Group "${name}" created with ${groupPartsCount} part(s)`);
             
             console.log('Group created:', name, 'Color:', selectedColor);
@@ -2486,6 +2539,19 @@
             if (index === '' || index === null) {
                 selectedGroup = null;
                 
+                // Clear all checkboxes when no group selected
+                parts.forEach((part, idx) => {
+                    const checkbox = document.getElementById(`checkbox-${idx}`);
+                    const card = document.getElementById(`part-card-${idx}`);
+                    if (checkbox) {
+                        checkbox.classList.remove('checked');
+                        checkbox.textContent = '';
+                    }
+                    if (card) {
+                        card.classList.remove('selected');
+                    }
+                });
+                
                 // Reset dropdown
                 if (colorDropdown) {
                     colorDropdown.value = '';
@@ -2502,6 +2568,32 @@
             
             selectedGroup = groups[parseInt(index)];
             console.log('Group selected:', selectedGroup.name, 'Parts:', Array.from(selectedGroup.parts), 'Color:', selectedGroup.color);
+            
+            // Check/uncheck parts based on group membership
+            parts.forEach((part, idx) => {
+                const checkbox = document.getElementById(`checkbox-${idx}`);
+                const card = document.getElementById(`part-card-${idx}`);
+                
+                if (selectedGroup.parts.has(idx)) {
+                    // Part is in group - check it
+                    if (checkbox) {
+                        checkbox.classList.add('checked');
+                        checkbox.textContent = '✓';
+                    }
+                    if (card) {
+                        card.classList.add('selected');
+                    }
+                } else {
+                    // Part is not in group - uncheck it
+                    if (checkbox) {
+                        checkbox.classList.remove('checked');
+                        checkbox.textContent = '';
+                    }
+                    if (card) {
+                        card.classList.remove('selected');
+                    }
+                }
+            });
             
             // Enable colour dropdown for this group
             if (colorDropdown) {
@@ -2696,19 +2788,35 @@
             const index = groups.findIndex(g => g.name === groupName);
             
             if (index !== -1) {
+                // Clear checkboxes for parts in this group
+                selectedGroup.parts.forEach(partIndex => {
+                    const checkbox = document.getElementById(`checkbox-${partIndex}`);
+                    const card = document.getElementById(`part-card-${partIndex}`);
+                    if (checkbox) {
+                        checkbox.classList.remove('checked');
+                        checkbox.textContent = '';
+                    }
+                    if (card) {
+                        card.classList.remove('selected');
+                    }
+                });
+                
                 groups.splice(index, 1);
                 selectedGroup = null;
                 renderGroupSelector();
                 
-                const applyBtn = document.getElementById('apply-group-color-btn');
                 const deleteBtn = document.getElementById('delete-group-btn');
-                if (applyBtn) {
-                    applyBtn.disabled = true;
-                    applyBtn.textContent = 'Select Group First';
-                    applyBtn.style.background = 'rgba(0, 255, 136, 0.1)';
-                    applyBtn.style.borderColor = 'var(--accent-green)';
-                }
+                const colorDropdown = document.getElementById('group-color-dropdown');
+                
                 if (deleteBtn) deleteBtn.disabled = true;
+                if (colorDropdown) {
+                    colorDropdown.disabled = true;
+                    colorDropdown.value = '';
+                    colorDropdown.style.backgroundColor = 'var(--bg-primary)';
+                    colorDropdown.style.color = 'var(--text-primary)';
+                    colorDropdown.style.borderColor = 'var(--border)';
+                    colorDropdown.style.borderWidth = '1px';
+                }
                 
                 // Reset group selector
                 const selector = document.getElementById('group-selector');
@@ -3113,40 +3221,6 @@
         }
 
         // Part Selection
-        function togglePartSelection(index) {
-            console.log('=== Toggle Part Selection ===');
-            console.log('Part index:', index);
-            console.log('Was selected:', selectedParts.has(index));
-            
-            const checkbox = document.getElementById(`checkbox-${index}`);
-            const card = document.getElementById(`part-card-${index}`);
-            
-            if (!checkbox || !card) {
-                console.error('Could not find checkbox or card for part', index);
-                return;
-            }
-            
-            if (selectedParts.has(index)) {
-                selectedParts.delete(index);
-                checkbox.classList.remove('checked');
-                checkbox.textContent = '';
-                card.classList.remove('selected');
-                console.log('Deselected part', index);
-            } else {
-                selectedParts.add(index);
-                checkbox.classList.add('checked');
-                checkbox.textContent = '✓';
-                card.classList.add('selected');
-                console.log('Selected part', index);
-            }
-            
-            console.log('Total selected parts:', selectedParts.size);
-            console.log('Selected parts array:', Array.from(selectedParts));
-            
-            updateSelectionInfo();
-            updateApplyButton();
-            console.log('============================');
-        }
 
         function updateSelectionInfo() {
             const info = document.getElementById('selection-info');
@@ -3262,6 +3336,9 @@
                         const geometry = loader.parse(e.target.result);
                         console.log('Geometry parsed successfully');
                         
+                        // Center geometry so rotation happens around its own center
+                        geometry.center();
+                        
                         const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
                         
                         const material = new THREE.MeshStandardMaterial({
@@ -3363,7 +3440,7 @@
                 </div>
                 
                 <div class="part-content">
-                    <div class="coordinate-display">
+                    <div class="coordinate-display" ondblclick="focusOnPart(${index})" title="Double-click to focus in 3D view">
                         <div class="coord-title">Current Position</div>
                         <div class="coord-values">
                             <div class="coord-item">
@@ -3783,6 +3860,89 @@
             }
         }
 
+        function highlightPartInSidebar(partIndex) {
+            const card = document.getElementById(`part-card-${partIndex}`);
+            
+            if (!card) {
+                console.warn('Part card not found:', partIndex);
+                return;
+            }
+            
+            // Expand part if it's collapsed
+            if (card.classList.contains('minimized')) {
+                const collapseBtn = document.getElementById(`part-collapse-${partIndex}`);
+                if (collapseBtn) {
+                    card.classList.remove('minimized');
+                    collapseBtn.textContent = '−';
+                }
+            }
+            
+            // Scroll to the part card smoothly
+            card.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center'
+            });
+            
+            // Add highlight effect
+            card.style.transition = 'all 0.3s ease';
+            card.style.transform = 'scale(1.02)';
+            card.style.boxShadow = '0 0 20px rgba(0, 245, 255, 0.6), 0 0 40px rgba(0, 245, 255, 0.3)';
+            card.style.borderColor = 'var(--accent-cyan)';
+            card.style.borderWidth = '2px';
+            
+            // Show toast
+            const partName = parts[partIndex]?.userData?.name || `Part ${partIndex + 1}`;
+            showToast(`📍 Found: ${partName}`);
+            
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+                card.style.transform = '';
+                card.style.boxShadow = '';
+                card.style.borderColor = '';
+                card.style.borderWidth = '';
+            }, 2000);
+            
+            console.log('Highlighted part in sidebar:', partIndex, partName);
+        }
+
+        function focusOnPart(partIndex) {
+            if (!parts[partIndex]) {
+                console.warn('Part not found:', partIndex);
+                return;
+            }
+            
+            const part = parts[partIndex];
+            const partName = part.userData.name || `Part ${partIndex + 1}`;
+            
+            // Get part's bounding box
+            const box = new THREE.Box3().setFromObject(part);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            
+            // Calculate distance based on part size
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            const distance = Math.abs(maxDim / Math.sin(fov / 2)) * 1.5;
+            
+            // Position camera to look at part
+            const direction = new THREE.Vector3(1, 1, 1).normalize();
+            camera.position.copy(center).add(direction.multiplyScalar(distance));
+            camera.lookAt(center);
+            
+            // Highlight the part temporarily
+            const originalEmissive = part.material.emissive.clone();
+            part.material.emissive.setHex(0x00f5ff);
+            part.material.emissiveIntensity = 0.3;
+            
+            setTimeout(() => {
+                part.material.emissive.copy(originalEmissive);
+                part.material.emissiveIntensity = 0;
+            }, 1500);
+            
+            showToast(`🔍 Focused on: ${partName}`);
+            console.log('Focused on part:', partIndex, partName);
+        }
+
         function frameModel() {
             if (parts.length === 0) return;
             
@@ -3892,6 +4052,25 @@
 
         function setupControls() {
             const canvas = renderer.domElement;
+            
+            // Double-click to find part in sidebar
+            canvas.addEventListener('dblclick', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(parts);
+                
+                if (intersects.length > 0) {
+                    const clickedPart = intersects[0].object;
+                    const partIndex = parts.indexOf(clickedPart);
+                    
+                    if (partIndex !== -1) {
+                        highlightPartInSidebar(partIndex);
+                    }
+                }
+            });
             
             canvas.addEventListener('mousedown', (e) => {
                 if (measureMode) {
