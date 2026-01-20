@@ -6,7 +6,6 @@
     <title>Print Palette - 3D Print Colour Preview Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Azeret+Mono:wght@400;600&display=swap');
@@ -1304,7 +1303,6 @@
 
             <!-- Action Buttons -->
             <div class="action-buttons">
-                <button class="action-btn export-stl" onclick="exportAssembly()">📥 Export STL</button>
                 <button class="action-btn secondary" onclick="exportImage()">📸 Image</button>
                 <button class="action-btn secondary" onclick="randomizeColors()">🎲 Random Colour</button>
                 <button class="action-btn secondary" onclick="clearAll()">📄 New Project</button>
@@ -1361,6 +1359,8 @@
                     <div class="section-actions">
                         <button class="section-btn" onclick="expandAllParts()">Expand</button>
                         <button class="section-btn" onclick="collapseAllParts()">Collapse</button>
+                        <button class="section-btn" onclick="lockAllParts()" title="Lock all parts">🔒 Lock</button>
+                        <button class="section-btn" onclick="unlockAllParts()" title="Unlock all parts">🔓 Unlock</button>
                     </div>
                 </div>
                 <div id="parts-container">
@@ -1405,7 +1405,7 @@
         let scene, camera, renderer, raycaster, mouse;
         let parts = [];
         let partFiles = {}; // Store original STL files
-        let loader, exporter;
+        let loader;
         let modelGroup;
         let measureMode = false;
         let measurePoints = [];
@@ -1415,9 +1415,26 @@
         let animationFrameId = null; // Track animation frame for cleanup
         
         let presetColors = [
-            '#ff006b', '#00f5ff', '#5b6fd8', '#ffd700', '#00ff88',
-            '#ff6b35', '#a855f7', '#2a3550', '#f8f8f8', '#1a1a1a',
-            '#ff3366', '#33ff99', '#3366ff', '#ffcc00', '#cc33ff'
+            // Row 1: Basic colors (most common)
+            '#FFFFFF', // White (Pure White PLA)
+            '#1C1C1C', // Black (True Black PLA)
+            '#E63946', // Red (Fire Engine Red)
+            '#2563EB', // Blue (Royal Blue)
+            '#22C55E', // Green (Grass Green)
+            
+            // Row 2: Bright colors
+            '#FCD34D', // Yellow (Bright Yellow)
+            '#F97316', // Orange (Safety Orange)
+            '#EC4899', // Pink (Hot Pink)
+            '#7C3AED', // Purple (Deep Purple)
+            '#38BDF8', // Sky Blue (Light Blue)
+            
+            // Row 3: Specialty colors
+            '#9CA3AF', // Gray (Silver Gray)
+            '#047857', // Dark Green (Forest Green)
+            '#92400E', // Brown (Chocolate Brown)
+            '#D4AF37', // Gold (Metallic Gold)
+            '#F5F5DC'  // Natural/Beige (Transparent/Natural PLA)
         ];
 
         function init() {
@@ -1456,7 +1473,6 @@
             scene.add(rimLight);
             
             loader = new THREE.STLLoader();
-            exporter = new THREE.STLExporter();
             
             setupFileUpload();
             setupControls();
@@ -2742,6 +2758,66 @@
             });
             showToast('All parts collapsed');
         }
+        
+        function lockAllParts() {
+            let lockedCount = 0;
+            parts.forEach((part, index) => {
+                if (!part.userData.locked) {
+                    part.userData.locked = true;
+                    const btn = document.getElementById(`lock-btn-${index}`);
+                    const card = document.getElementById(`part-card-${index}`);
+                    const transformDiv = document.getElementById(`transform-${index}`);
+                    
+                    if (btn) {
+                        btn.classList.add('locked');
+                        btn.textContent = '🔒';
+                    }
+                    if (card) {
+                        card.classList.add('locked');
+                    }
+                    if (transformDiv && transformDiv.classList.contains('show')) {
+                        transformDiv.classList.add('disabled');
+                    }
+                    lockedCount++;
+                }
+            });
+            
+            if (lockedCount > 0) {
+                showToast(`🔒 Locked ${lockedCount} part(s)`);
+            } else {
+                showToast('All parts already locked');
+            }
+        }
+        
+        function unlockAllParts() {
+            let unlockedCount = 0;
+            parts.forEach((part, index) => {
+                if (part.userData.locked) {
+                    part.userData.locked = false;
+                    const btn = document.getElementById(`lock-btn-${index}`);
+                    const card = document.getElementById(`part-card-${index}`);
+                    const transformDiv = document.getElementById(`transform-${index}`);
+                    
+                    if (btn) {
+                        btn.classList.remove('locked');
+                        btn.textContent = '🔓';
+                    }
+                    if (card) {
+                        card.classList.remove('locked');
+                    }
+                    if (transformDiv) {
+                        transformDiv.classList.remove('disabled');
+                    }
+                    unlockedCount++;
+                }
+            });
+            
+            if (unlockedCount > 0) {
+                showToast(`🔓 Unlocked ${unlockedCount} part(s)`);
+            } else {
+                showToast('All parts already unlocked');
+            }
+        }
 
         function togglePartCollapse(index) {
             const card = document.getElementById(`part-card-${index}`);
@@ -3705,44 +3781,6 @@
             `;
             
             document.getElementById('bounding-box-info').innerHTML = info;
-        }
-
-        // Export Assembly as STL
-        function exportAssembly() {
-            if (parts.length === 0) {
-                showToast('⚠️ No parts to export');
-                return;
-            }
-            
-            const visibleParts = parts.filter(p => p.visible);
-            if (visibleParts.length === 0) {
-                showToast('⚠️ No visible parts to export');
-                return;
-            }
-            
-            const exportGroup = new THREE.Group();
-            visibleParts.forEach(part => {
-                const clonedGeometry = part.geometry.clone();
-                clonedGeometry.applyMatrix4(part.matrixWorld);
-                const mesh = new THREE.Mesh(clonedGeometry);
-                exportGroup.add(mesh);
-            });
-            
-            const result = exporter.parse(exportGroup, { binary: true });
-            const blob = new Blob([result], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            const projectName = document.getElementById('project-name').value.replace(/[^a-z0-9]/gi, '_');
-            link.download = `${projectName}_assembly.stl`;
-            link.click();
-            URL.revokeObjectURL(url);
-            
-            exportGroup.children.forEach(child => {
-                child.geometry.dispose();
-            });
-            
-            showToast('📥 Assembly STL exported!');
         }
 
         function toggleMeasure() {
