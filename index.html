@@ -6,6 +6,7 @@
     <title>Print Palette - 3D Print Colour Preview Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Azeret+Mono:wght@400;600&display=swap');
@@ -1405,7 +1406,7 @@
         let scene, camera, renderer, raycaster, mouse;
         let parts = [];
         let partFiles = {}; // Store original STL files
-        let loader;
+        let loader, exporter;
         let modelGroup;
         let measureMode = false;
         let measurePoints = [];
@@ -1473,6 +1474,7 @@
             scene.add(rimLight);
             
             loader = new THREE.STLLoader();
+            exporter = new THREE.STLExporter();
             
             setupFileUpload();
             setupControls();
@@ -2571,12 +2573,15 @@
                     animatePartColorChange(parts[idx], selectedColor);
                     parts[idx].userData.color = selectedColor;
                     
-                    const preview = document.getElementById(`preview-${idx}`);
-                    const hex = document.getElementById(`hex-${idx}`);
-                    const colorInput = preview?.querySelector('input');
-                    if (preview) preview.style.background = selectedColor;
-                    if (hex) hex.textContent = selectedColor;
-                    if (colorInput) colorInput.value = selectedColor;
+                    // Update dropdown
+                    const dropdown = document.getElementById(`part-color-dropdown-${idx}`);
+                    if (dropdown) {
+                        dropdown.value = selectedColor;
+                        dropdown.style.backgroundColor = selectedColor;
+                        dropdown.style.color = '#fff';
+                        dropdown.style.borderColor = selectedColor;
+                        dropdown.style.borderWidth = '2px';
+                    }
                     successCount++;
                 }
             });
@@ -2625,12 +2630,15 @@
                         animatePartColorChange(parts[idx], color);
                         parts[idx].userData.color = color;
                         
-                        const preview = document.getElementById(`preview-${idx}`);
-                        const hex = document.getElementById(`hex-${idx}`);
-                        const colorInput = preview?.querySelector('input');
-                        if (preview) preview.style.background = color;
-                        if (hex) hex.textContent = color;
-                        if (colorInput) colorInput.value = color;
+                        // Update dropdown
+                        const dropdown = document.getElementById(`part-color-dropdown-${idx}`);
+                        if (dropdown) {
+                            dropdown.value = color;
+                            dropdown.style.backgroundColor = color;
+                            dropdown.style.color = '#fff';
+                            dropdown.style.borderColor = color;
+                            dropdown.style.borderWidth = '2px';
+                        }
                         successCount++;
                     }
                 });
@@ -2660,12 +2668,15 @@
                         animatePartColorChange(parts[idx], randomColor);
                         parts[idx].userData.color = randomColor;
 
-                        const preview = document.getElementById(`preview-${idx}`);
-                        const hex = document.getElementById(`hex-${idx}`);
-                        const input = preview?.querySelector('input');
-                        if (preview) preview.style.background = randomColor;
-                        if (hex) hex.textContent = randomColor;
-                        if (input) input.value = randomColor;
+                        // Update dropdown
+                        const dropdown = document.getElementById(`part-color-dropdown-${idx}`);
+                        if (dropdown) {
+                            dropdown.value = randomColor;
+                            dropdown.style.backgroundColor = randomColor;
+                            dropdown.style.color = '#fff';
+                            dropdown.style.borderColor = randomColor;
+                            dropdown.style.borderWidth = '2px';
+                        }
                     }
                 });
             });
@@ -3036,18 +3047,19 @@
             selectedParts.forEach(index => {
                 console.log(`Applying palette color ${selectedColor} to part ${index}`);
                 if (parts[index]) {
-                    // Update the part's color
-                    parts[index].material.color.set(selectedColor);
+                    // Update the part's color with animation
+                    animatePartColorChange(parts[index], selectedColor);
                     parts[index].userData.color = selectedColor;
                     
-                    // Update the UI elements
-                    const preview = document.getElementById(`preview-${index}`);
-                    const hex = document.getElementById(`hex-${index}`);
-                    const colorInput = document.querySelector(`#preview-${index} input`);
-                    
-                    if (preview) preview.style.background = selectedColor;
-                    if (hex) hex.textContent = selectedColor;
-                    if (colorInput) colorInput.value = selectedColor;
+                    // Update the dropdown
+                    const dropdown = document.getElementById(`part-color-dropdown-${index}`);
+                    if (dropdown) {
+                        dropdown.value = selectedColor;
+                        dropdown.style.backgroundColor = selectedColor;
+                        dropdown.style.color = '#fff';
+                        dropdown.style.borderColor = selectedColor;
+                        dropdown.style.borderWidth = '2px';
+                    }
                     
                     successCount++;
                 } else {
@@ -3370,14 +3382,11 @@
                     </div>
                     
                     <div class="color-picker-container">
-                        <div class="color-input-wrapper">
-                            <div class="color-preview" style="background: ${part.userData.color};" id="preview-${index}">
-                                <input type="color" value="${part.userData.color}" onchange="updateColor(${index}, this.value)">
-                            </div>
-                            <div class="color-hex" id="hex-${index}">${part.userData.color}</div>
-                        </div>
+                        <div style="font-size: 9px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase; margin-bottom: 4px;">Part Colour:</div>
+                        <select id="part-color-dropdown-${index}" onchange="updateColorFromDropdown(${index})" style="width: 100%; padding: 10px; border-radius: 6px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-family: 'Rajdhani', sans-serif; cursor: pointer; font-size: 12px; transition: all 0.3s ease;">
+                            <option value="">Pick a colour</option>
+                        </select>
                     </div>
-                    <div class="preset-colors" id="presets-${index}"></div>
                     
                     <div class="transform-controls" id="transform-${index}">
                         <div class="transform-section">
@@ -3429,14 +3438,28 @@
             
             container.appendChild(card);
             
-            const presetsContainer = document.getElementById(`presets-${index}`);
-            presetColors.forEach(color => {
-                const preset = document.createElement('div');
-                preset.className = 'preset-color';
-                preset.style.background = color;
-                preset.onclick = () => updateColor(index, color);
-                presetsContainer.appendChild(preset);
-            });
+            // Populate the color dropdown for this part
+            const partColorDropdown = document.getElementById(`part-color-dropdown-${index}`);
+            if (partColorDropdown) {
+                presetColors.forEach(color => {
+                    const option = document.createElement('option');
+                    option.value = color;
+                    option.textContent = color.toUpperCase();
+                    option.style.backgroundColor = color;
+                    option.style.color = '#fff';
+                    option.style.fontWeight = '600';
+                    option.style.padding = '4px 8px';
+                    partColorDropdown.appendChild(option);
+                });
+                
+                // Set current color
+                partColorDropdown.value = part.userData.color;
+                partColorDropdown.style.backgroundColor = part.userData.color;
+                partColorDropdown.style.color = '#fff';
+                partColorDropdown.style.fontWeight = '600';
+                partColorDropdown.style.borderColor = part.userData.color;
+                partColorDropdown.style.borderWidth = '2px';
+            }
             
             console.log('Part control added successfully for index:', index);
             } catch (error) {
@@ -3462,10 +3485,51 @@
 
         function updateColor(index, color) {
             if (parts[index]) {
-                parts[index].material.color.set(color);
+                animatePartColorChange(parts[index], color);
                 parts[index].userData.color = color;
-                document.getElementById(`preview-${index}`).style.background = color;
-                document.getElementById(`hex-${index}`).textContent = color;
+                
+                // Update dropdown if it exists
+                const dropdown = document.getElementById(`part-color-dropdown-${index}`);
+                if (dropdown) {
+                    dropdown.value = color;
+                    dropdown.style.backgroundColor = color;
+                    dropdown.style.color = '#fff';
+                    dropdown.style.borderColor = color;
+                    dropdown.style.borderWidth = '2px';
+                }
+            }
+        }
+        
+        function updateColorFromDropdown(index) {
+            const dropdown = document.getElementById(`part-color-dropdown-${index}`);
+            
+            if (!dropdown) {
+                console.warn('Color dropdown not found for part:', index);
+                return;
+            }
+            
+            const color = dropdown.value;
+            
+            if (!color) {
+                // Reset to default when no color selected
+                dropdown.style.backgroundColor = 'var(--bg-primary)';
+                dropdown.style.color = 'var(--text-primary)';
+                dropdown.style.borderColor = 'var(--border)';
+                dropdown.style.borderWidth = '1px';
+                return;
+            }
+
+            // Set dropdown visual feedback
+            dropdown.style.backgroundColor = color;
+            dropdown.style.color = '#fff';
+            dropdown.style.borderColor = color;
+            dropdown.style.borderWidth = '2px';
+
+            // Apply color to part immediately
+            if (parts[index]) {
+                animatePartColorChange(parts[index], color);
+                parts[index].userData.color = color;
+                showToast(`✓ ${color.toUpperCase()} applied to "${parts[index].userData.name}"`);
             }
         }
 
@@ -3692,8 +3756,6 @@
             parts.forEach((part, index) => {
                 const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
                 updateColor(index, randomColor);
-                const colorInput = document.querySelector(`#preview-${index} input`);
-                if (colorInput) colorInput.value = randomColor;
             });
             showToast('🎨 Colours randomized!');
         }
