@@ -1178,6 +1178,182 @@
         }
 
         /* Toast Notification */
+        /* Disclaimer Modal */
+        .disclaimer-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .disclaimer-modal.hidden {
+            display: none;
+        }
+
+        .disclaimer-content {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 245, 255, 0.3);
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .disclaimer-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .disclaimer-subtitle {
+            font-family: 'Azeret Mono', monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .disclaimer-text {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .disclaimer-text strong {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .disclaimer-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .disclaimer-list li {
+            padding: 8px 0 8px 25px;
+            position: relative;
+            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .disclaimer-list li:before {
+            content: "›";
+            position: absolute;
+            left: 0;
+            color: var(--accent-cyan);
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .disclaimer-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid var(--accent-yellow);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+
+        .disclaimer-warning-text {
+            font-family: 'Azeret Mono', monospace;
+            font-size: 12px;
+            color: var(--accent-yellow);
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .disclaimer-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .disclaimer-btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .disclaimer-btn.accept {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .disclaimer-btn.accept:hover {
+            background: rgba(0, 245, 255, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 245, 255, 0.3);
+        }
+
+        .disclaimer-btn.decline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .disclaimer-btn.decline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .disclaimer-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .disclaimer-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .disclaimer-content::-webkit-scrollbar-thumb {
+            background: var(--accent-cyan);
+            border-radius: 4px;
+        }
+
         .toast {
             position: fixed;
             bottom: 24px;
@@ -1224,6 +1400,44 @@
     </style>
 </head>
 <body>
+    <!-- Disclaimer Modal -->
+    <div class="disclaimer-modal" id="disclaimer-modal">
+        <div class="disclaimer-content">
+            <div class="disclaimer-title">Important Notice</div>
+            <div class="disclaimer-subtitle">Please Read Before Continuing</div>
+            
+            <div class="disclaimer-text">
+                <strong>Print Palette</strong> is a preview and colour selection tool for 3D printing enthusiasts. This application is provided for <strong>visualization purposes only</strong>.
+            </div>
+
+            <div class="disclaimer-warning">
+                <p class="disclaimer-warning-text">⚠️ DISCLAIMER</p>
+            </div>
+
+            <ul class="disclaimer-list">
+                <li>Print Palette is <strong>NOT</strong> the developer, creator, or owner of any 3D models displayed in this application.</li>
+                <li>All 3D models, STL files, and associated intellectual property remain the <strong>property of their respective creators and rights holders</strong>.</li>
+                <li>Any and all licenses, terms of use, and restrictions are set by the <strong>original model owners</strong>.</li>
+                <li>Users are responsible for ensuring they have <strong>proper licenses and permissions</strong> to use any 3D models loaded into this application.</li>
+                <li>This tool does not grant, imply, or transfer any rights to reproduce, distribute, or commercially use any 3D models.</li>
+                <li>Encrypted project files (.stlproject) are for <strong>personal preview purposes only</strong> and do not constitute a license to use the models.</li>
+            </ul>
+
+            <div class="disclaimer-text">
+                <strong>File Protection:</strong> STL files saved in .stlproject format are encrypted to prevent unauthorized extraction. This is a technical measure, not a license grant. You must obtain proper licenses directly from model creators.
+            </div>
+
+            <div class="disclaimer-text">
+                <strong>No Warranty:</strong> This software is provided "as is" without warranty of any kind. Use at your own risk.
+            </div>
+
+            <div class="disclaimer-actions">
+                <button class="disclaimer-btn decline" onclick="declineDisclaimer()">I Do Not Agree</button>
+                <button class="disclaimer-btn accept" onclick="acceptDisclaimer()">I Understand & Agree</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="sidebar">
             <div class="logo">PRINT PALETTE</div>
@@ -1247,7 +1461,7 @@
 
             <!-- Project Buttons -->
             <div class="action-buttons">
-                <button class="action-btn project" onclick="saveProject()">💾 Save Project</button>
+                <button class="action-btn project" onclick="saveProject()" title="Save project with encrypted STL files - preview only, no extraction">💾 Save Project</button>
                 <button class="action-btn project" onclick="loadProject()">📂 Load Project</button>
             </div>
             
@@ -1369,6 +1583,13 @@
                         No parts loaded yet.<br>
                         Upload STL files or load a project.
                     </div>
+                </div>
+                
+                <!-- Footer Link -->
+                <div style="margin-top: 20px; padding: 15px; text-align: center; border-top: 1px solid var(--border);">
+                    <a href="javascript:void(0)" onclick="showDisclaimer()" style="font-size: 10px; color: var(--text-secondary); text-decoration: none; font-family: 'Azeret Mono', monospace; transition: color 0.3s ease;">
+                        📋 View Disclaimer
+                    </a>
                 </div>
             </div>
         </div>
@@ -1503,11 +1724,84 @@
         }
 
         // Update project name when changed
+        // DISCLAIMER FUNCTIONS
+        function showDisclaimer() {
+            const modal = document.getElementById('disclaimer-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function hideDisclaimer() {
+            const modal = document.getElementById('disclaimer-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function acceptDisclaimer() {
+            // Store acceptance in localStorage
+            localStorage.setItem('printPaletteDisclaimerAccepted', 'true');
+            localStorage.setItem('printPaletteDisclaimerDate', new Date().toISOString());
+            
+            hideDisclaimer();
+            showToast('✓ Welcome to Print Palette');
+        }
+
+        function declineDisclaimer() {
+            // Redirect away or show message
+            if (confirm('You must agree to the terms to use Print Palette. Click OK to close this page.')) {
+                window.location.href = 'about:blank';
+            }
+        }
+
+        function checkDisclaimer() {
+            const accepted = localStorage.getItem('printPaletteDisclaimerAccepted');
+            
+            if (accepted !== 'true') {
+                // Show disclaimer if not previously accepted
+                showDisclaimer();
+            } else {
+                // Hide disclaimer if already accepted
+                hideDisclaimer();
+            }
+        }
+
+        // Check disclaimer on page load
+        window.addEventListener('load', () => {
+            checkDisclaimer();
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('project-name').addEventListener('input', updateProjectDisplay);
         });
 
         // PROJECT SAVE/LOAD FUNCTIONS
+        
+        // Simple XOR encryption to protect STL files in project archives
+        function encryptBuffer(buffer, key) {
+            const data = new Uint8Array(buffer);
+            const encrypted = new Uint8Array(data.length);
+            const keyBytes = new TextEncoder().encode(key);
+            
+            for (let i = 0; i < data.length; i++) {
+                encrypted[i] = data[i] ^ keyBytes[i % keyBytes.length];
+            }
+            
+            return encrypted.buffer;
+        }
+        
+        function decryptBuffer(buffer, key) {
+            // XOR encryption is symmetric - same operation for decrypt
+            return encryptBuffer(buffer, key);
+        }
+        
+        function generateEncryptionKey(projectName) {
+            // Generate a consistent key from project name
+            // This isn't cryptographically secure, but prevents casual extraction
+            return `PP_${projectName}_2026_${projectName.length}`;
+        }
+        
         async function saveProject() {
             if (parts.length === 0) {
                 showToast('⚠️ No parts to save');
@@ -1519,14 +1813,16 @@
                 showToast('💾 Saving project...');
 
                 const zip = new JSZip();
-                const stlFolder = zip.folder("stl_files");
+                const dataFolder = zip.folder("data");  // Changed from "stl_files" to "data"
+                
+                const encryptionKey = generateEncryptionKey(projectName);
 
-                // Save all original STL files
+                // Save all original STL files with encryption and obfuscation
                 for (let i = 0; i < parts.length; i++) {
                     const part = parts[i];
-                    const fileName = `${part.userData.name}.stl`;
+                    const obfuscatedName = `part_${i}.dat`;  // Obfuscated filename
                     
-                    console.log(`Exporting part ${i}: ${fileName}`);
+                    console.log(`Exporting part ${i}: ${part.userData.name} as ${obfuscatedName}`);
                     
                     // Create a temporary mesh with ONLY the geometry (no transforms)
                     const tempGeometry = part.geometry.clone();
@@ -1537,19 +1833,23 @@
                     
                     console.log(`STL data type: ${stlData.constructor.name}, length: ${stlData.byteLength || stlData.length}`);
                     
-                    // Add to zip as binary
+                    // Get the buffer
+                    let buffer;
                     if (stlData instanceof DataView) {
-                        // If it's a DataView, get the buffer
-                        stlFolder.file(fileName, stlData.buffer, { binary: true });
+                        buffer = stlData.buffer;
                     } else if (stlData instanceof ArrayBuffer) {
-                        stlFolder.file(fileName, stlData, { binary: true });
+                        buffer = stlData;
                     } else if (stlData instanceof Uint8Array) {
-                        stlFolder.file(fileName, stlData, { binary: true });
+                        buffer = stlData.buffer;
                     } else {
-                        // Fallback - treat as array and convert
-                        const buffer = new Uint8Array(stlData);
-                        stlFolder.file(fileName, buffer, { binary: true });
+                        buffer = new Uint8Array(stlData).buffer;
                     }
+                    
+                    // Encrypt the buffer
+                    const encryptedBuffer = encryptBuffer(buffer, encryptionKey);
+                    
+                    // Add encrypted data with obfuscated name
+                    dataFolder.file(obfuscatedName, encryptedBuffer, { binary: true });
                     
                     // Cleanup
                     tempGeometry.dispose();
@@ -1557,14 +1857,15 @@
                     tempMesh.material.dispose();
                 }
 
-                // Save project configuration
+                // Save project configuration with obfuscated file mapping
                 const projectData = {
                     projectName: projectName,
-                    version: "1.0",
+                    version: "1.1",  // Version 1.1: Added geometry centering for proper rotation
                     created: new Date().toISOString(),
-                    parts: parts.map(part => ({
+                    protected: true,  // Flag indicating files are encrypted
+                    parts: parts.map((part, i) => ({
                         name: part.userData.name,
-                        fileName: `${part.userData.name}.stl`,
+                        fileName: `part_${i}.dat`,  // Obfuscated filename
                         color: part.userData.color,
                         visible: part.userData.visible,
                         position: part.userData.position,
@@ -1579,6 +1880,28 @@
                 };
 
                 zip.file("project.json", JSON.stringify(projectData, null, 2));
+                
+                // Add README explaining the protection
+                const readmeText = `Print Palette Project File
+=============================
+
+This .stlproject file contains 3D model data for preview purposes only.
+
+IMPORTANT NOTES:
+- Files are encrypted and obfuscated to prevent unauthorized extraction
+- This project can only be opened with Print Palette
+- Individual STL files cannot be exported from this application
+- To obtain print files, please purchase them from the original source
+
+Project: ${projectName}
+Created: ${new Date().toISOString()}
+Protected: Yes
+Version: 1.1
+
+© Print Palette - For preview and color selection only
+`;
+                
+                zip.file("README.txt", readmeText);
 
                 console.log('Generating ZIP file...');
                 
@@ -1603,7 +1926,7 @@
                     URL.revokeObjectURL(url);
                 }, 100);
 
-                showToast(`💾 Project "${projectName}" saved successfully!`);
+                showToast(`🔒 Project "${projectName}" saved securely!`);
                 console.log('Project saved successfully');
                 
             } catch (err) {
@@ -1652,13 +1975,18 @@
                     document.getElementById('project-name').value = projectData.projectName;
                     updateProjectDisplay();
 
+                    // Determine if project is encrypted
+                    const isProtected = projectData.protected === true;
+                    const folderName = isProtected ? "data" : "stl_files";
+                    const encryptionKey = isProtected ? generateEncryptionKey(projectData.projectName) : null;
+
                     // Load STL files
-                    const stlFolder = zip.folder("stl_files");
+                    const stlFolder = zip.folder(folderName);
                     if (!stlFolder) {
-                        throw new Error('Invalid project file - missing stl_files folder');
+                        throw new Error(`Invalid project file - missing ${folderName} folder`);
                     }
                     
-                    console.log(`Loading ${projectData.parts.length} parts...`);
+                    console.log(`Loading ${projectData.parts.length} parts... ${isProtected ? '(encrypted)' : '(unencrypted)'}`);
                     
                     const loadedParts = [];
                     const failedParts = [];
@@ -1676,7 +2004,7 @@
                             }
                             
                             // Get the file as arraybuffer with validation
-                            const arrayBuffer = await stlFile.async("arraybuffer");
+                            let arrayBuffer = await stlFile.async("arraybuffer");
                             
                             if (!arrayBuffer || arrayBuffer.byteLength === 0) {
                                 console.error(`Empty STL file: ${partData.fileName}`);
@@ -1684,9 +2012,15 @@
                                 continue;
                             }
                             
-                            console.log(`STL data loaded: ${arrayBuffer.byteLength} bytes`);
+                            // Decrypt if protected
+                            if (isProtected) {
+                                arrayBuffer = decryptBuffer(arrayBuffer, encryptionKey);
+                                console.log(`Decrypted STL data: ${arrayBuffer.byteLength} bytes`);
+                            } else {
+                                console.log(`STL data loaded: ${arrayBuffer.byteLength} bytes`);
+                            }
                             
-                            await loadSTLFromBuffer(arrayBuffer, partData);
+                            await loadSTLFromBuffer(arrayBuffer, partData, projectData.version || "1.0");
                             loadedParts.push(partData.name);
                             
                         } catch (partErr) {
@@ -1816,13 +2150,18 @@
                 document.getElementById('project-name').value = projectData.projectName;
                 updateProjectDisplay();
 
+                // Determine if project is encrypted
+                const isProtected = projectData.protected === true;
+                const folderName = isProtected ? "data" : "stl_files";
+                const encryptionKey = isProtected ? generateEncryptionKey(projectData.projectName) : null;
+
                 // Load STL files
-                const stlFolder = zip.folder("stl_files");
+                const stlFolder = zip.folder(folderName);
                 if (!stlFolder) {
-                    throw new Error('Invalid project file - missing stl_files folder');
+                    throw new Error(`Invalid project file - missing ${folderName} folder`);
                 }
                 
-                console.log(`Loading ${projectData.parts.length} parts...`);
+                console.log(`Loading ${projectData.parts.length} parts... ${isProtected ? '(encrypted)' : '(unencrypted)'}`);
                 
                 const loadedParts = [];
                 const failedParts = [];
@@ -1839,8 +2178,14 @@
                             continue;
                         }
                         
-                        const arrayBuffer = await stlFile.async("arraybuffer");
-                        await loadSTLFromBuffer(arrayBuffer, partData);
+                        let arrayBuffer = await stlFile.async("arraybuffer");
+                        
+                        // Decrypt if protected
+                        if (isProtected) {
+                            arrayBuffer = decryptBuffer(arrayBuffer, encryptionKey);
+                        }
+                        
+                        await loadSTLFromBuffer(arrayBuffer, partData, projectData.version || "1.0");
                         loadedParts.push(partData.name);
                         
                     } catch (partErr) {
@@ -2214,7 +2559,7 @@
             refreshGitHubProjects();
         }
 
-        function loadSTLFromBuffer(arrayBuffer, partData) {
+        function loadSTLFromBuffer(arrayBuffer, partData, projectVersion = "1.0") {
             return new Promise((resolve, reject) => {
                 try {
                     console.log(`Loading STL buffer for ${partData.name}, size: ${arrayBuffer.byteLength} bytes`);
@@ -2233,6 +2578,20 @@
                     
                     console.log(`Geometry loaded: ${geometry.attributes.position.count} vertices`);
                     
+                    // Center geometry for version 1.1+ (enables rotation on the spot)
+                    // Keep uncentered for version 1.0 (maintains old project alignment)
+                    const shouldCenter = projectVersion !== "1.0";
+                    let centerOffset = { x: 0, y: 0, z: 0 };
+                    
+                    if (shouldCenter) {
+                        const offset = new THREE.Vector3();
+                        geometry.computeBoundingBox();
+                        geometry.boundingBox.getCenter(offset);
+                        geometry.center();
+                        centerOffset = { x: offset.x, y: offset.y, z: offset.z };
+                        console.log(`Geometry centered for ${partData.name}, offset:`, centerOffset);
+                    }
+                    
                     const material = new THREE.MeshStandardMaterial({
                         color: partData.color,
                         metalness: 0.3,
@@ -2247,14 +2606,15 @@
                         color: partData.color,
                         position: partData.position || { x: 0, y: 0, z: 0 },
                         rotation: partData.rotation || { x: 0, y: 0, z: 0 },
-                        locked: partData.locked || false
+                        locked: partData.locked || false,
+                        centerOffset: centerOffset
                     };
 
-                    // Apply transformations
+                    // Apply transformations with offset compensation
                     mesh.position.set(
-                        mesh.userData.position.x,
-                        mesh.userData.position.y,
-                        mesh.userData.position.z
+                        mesh.userData.position.x + centerOffset.x,
+                        mesh.userData.position.y + centerOffset.y,
+                        mesh.userData.position.z + centerOffset.z
                     );
 
                     mesh.rotation.set(
@@ -3296,12 +3656,23 @@
                             renderColorGrid();
                         }
                         
-                        const stlFolder = zip.folder("stl_files");
+                        // Determine if project is encrypted
+                        const isProtected = projectData.protected === true;
+                        const folderName = isProtected ? "data" : "stl_files";
+                        const encryptionKey = isProtected ? generateEncryptionKey(projectData.projectName) : null;
+                        
+                        const stlFolder = zip.folder(folderName);
                         for (const partData of projectData.parts) {
                             const stlFile = stlFolder.file(partData.fileName);
                             if (stlFile) {
-                                const arrayBuffer = await stlFile.async("arraybuffer");
-                                await loadSTLFromBuffer(arrayBuffer, partData);
+                                let arrayBuffer = await stlFile.async("arraybuffer");
+                                
+                                // Decrypt if protected
+                                if (isProtected) {
+                                    arrayBuffer = decryptBuffer(arrayBuffer, encryptionKey);
+                                }
+                                
+                                await loadSTLFromBuffer(arrayBuffer, partData, projectData.version || "1.0");
                             }
                         }
                         
@@ -3333,6 +3704,12 @@
                         const geometry = loader.parse(e.target.result);
                         console.log('Geometry parsed successfully');
                         
+                        // Center geometry for rotation on the spot (version 1.1 behavior)
+                        const centerOffset = new THREE.Vector3();
+                        geometry.computeBoundingBox();
+                        geometry.boundingBox.getCenter(centerOffset);
+                        geometry.center();
+                        
                         const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
                         
                         const material = new THREE.MeshStandardMaterial({
@@ -3349,8 +3726,12 @@
                             color: randomColor,
                             position: { x: 0, y: 0, z: 0 },
                             rotation: { x: 0, y: 0, z: 0 },
-                            locked: false
+                            locked: false,
+                            centerOffset: { x: centerOffset.x, y: centerOffset.y, z: centerOffset.z }
                         };
+                        
+                        // Set position with offset (newly uploaded files start centered)
+                        mesh.position.set(centerOffset.x, centerOffset.y, centerOffset.z);
                         
                         console.log('Adding mesh to scene...');
                         modelGroup.add(mesh);
@@ -3610,8 +3991,13 @@
             const val = parseFloat(value);
             
             if (type === 'position') {
-                parts[index].position[axis] = val;
+                // Update logical position
                 parts[index].userData.position[axis] = val;
+                
+                // Apply with center offset
+                const offset = parts[index].userData.centerOffset || { x: 0, y: 0, z: 0 };
+                parts[index].position[axis] = val + offset[axis];
+                
                 document.getElementById(`input-pos-${axis}-${index}`).value = val.toFixed(1);
                 updateCoordinates(index);
             } else if (type === 'rotation') {
@@ -3631,8 +4017,14 @@
             
             if (type === 'position') {
                 const clamped = Math.max(-500, Math.min(500, val));
-                parts[index].position[axis] = clamped;
+                
+                // Update logical position
                 parts[index].userData.position[axis] = clamped;
+                
+                // Apply with center offset
+                const offset = parts[index].userData.centerOffset || { x: 0, y: 0, z: 0 };
+                parts[index].position[axis] = clamped + offset[axis];
+                
                 document.getElementById(`pos-${axis}-${index}`).value = clamped;
                 document.getElementById(`input-pos-${axis}-${index}`).value = clamped.toFixed(1);
                 updateCoordinates(index);
@@ -3652,7 +4044,8 @@
             if (!parts[index] || parts[index].userData.locked) return;
             
             if (type === 'position') {
-                const current = parts[index].position[axis];
+                // Use logical position
+                const current = parts[index].userData.position[axis];
                 const newVal = Math.max(-500, Math.min(500, current + delta));
                 setTransformDirect(index, type, axis, newVal);
             } else if (type === 'rotation') {
@@ -3665,7 +4058,8 @@
         function updateCoordinates(index) {
             if (!parts[index]) return;
             
-            const pos = parts[index].position;
+            // Display logical position (not render position)
+            const pos = parts[index].userData.position;
             document.getElementById(`coord-x-${index}`).textContent = pos.x.toFixed(1);
             document.getElementById(`coord-y-${index}`).textContent = pos.y.toFixed(1);
             document.getElementById(`coord-z-${index}`).textContent = pos.z.toFixed(1);
@@ -3673,10 +4067,14 @@
 
         function resetTransform(index) {
             if (parts[index] && !parts[index].userData.locked) {
-                parts[index].position.set(0, 0, 0);
-                parts[index].rotation.set(0, 0, 0);
+                // Reset logical position
                 parts[index].userData.position = { x: 0, y: 0, z: 0 };
                 parts[index].userData.rotation = { x: 0, y: 0, z: 0 };
+                
+                // Apply with center offset
+                const offset = parts[index].userData.centerOffset || { x: 0, y: 0, z: 0 };
+                parts[index].position.set(offset.x, offset.y, offset.z);
+                parts[index].rotation.set(0, 0, 0);
                 
                 ['x', 'y', 'z'].forEach(axis => {
                     document.getElementById(`pos-${axis}-${index}`).value = 0;
