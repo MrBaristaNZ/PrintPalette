@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Print Palette - 3D Print Colour Preview Studio</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+    <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Azeret+Mono:wght@400;600&display=swap');
@@ -556,6 +562,63 @@
 
         .part-section {
             margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .part-section-sticky-header {
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            z-index: 10;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        /* Floating/elevated state when scrolled */
+        .part-section-sticky-header.is-floating {
+            background: rgba(15, 20, 30, 0.98);
+            border-bottom: 2px solid rgba(0, 245, 255, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 245, 255, 0.1);
+        }
+        
+        #parts-container {
+            padding-top: 12px;
+        }
+        
+        .parts-back-to-top {
+            position: sticky;
+            bottom: 16px;
+            left: calc(100% - 80px);
+            width: fit-content;
+            margin-left: auto;
+            margin-top: -40px;
+            z-index: 9;
+        }
+        
+        .parts-back-to-top button {
+            background: rgba(138, 85, 247, 0.9);
+            border: 1px solid var(--accent-purple);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+        
+        .parts-back-to-top button:hover {
+            background: rgba(138, 85, 247, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(138, 85, 247, 0.5);
+        }
+        
+        .parts-back-to-top button:active {
+            transform: translateY(0);
+        }
         }
 
         .empty-state {
@@ -1087,6 +1150,56 @@
             font-family: 'Azeret Mono', monospace;
             font-size: 11px;
             color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .info-overlay.minimized {
+            padding: 8px 12px;
+        }
+        
+        .info-overlay.minimized .info-content {
+            display: none;
+        }
+        
+        .info-overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .info-overlay.minimized .info-overlay-header {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .info-overlay-title {
+            color: var(--accent-cyan);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+        
+        .info-toggle-btn {
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 8px;
+            line-height: 1;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+        
+        .info-toggle-btn:hover {
+            background: rgba(0, 245, 255, 0.2);
+            transform: scale(1.05);
         }
 
         .info-overlay div {
@@ -1715,22 +1828,52 @@
 
             <!-- Parts Section -->
             <div class="part-section">
-                <div class="section-header">
-                    <div class="section-header-left">
-                        <span>Assembly Parts</span>
+                <!-- Sticky Header Container -->
+                <div class="part-section-sticky-header">
+                    <div class="section-header">
+                        <div class="section-header-left">
+                            <span>Assembly Parts</span>
+                        </div>
+                        <div class="section-actions">
+                            <button class="section-btn" onclick="expandAllParts()">Expand</button>
+                            <button class="section-btn" onclick="collapseAllParts()">Collapse</button>
+                            <button class="section-btn" onclick="lockAllParts()" title="Lock all parts">🔒 Lock</button>
+                            <button class="section-btn" onclick="unlockAllParts()" title="Unlock all parts">🔓 Unlock</button>
+                        </div>
                     </div>
-                    <div class="section-actions">
-                        <button class="section-btn" onclick="expandAllParts()">Expand</button>
-                        <button class="section-btn" onclick="collapseAllParts()">Collapse</button>
-                        <button class="section-btn" onclick="lockAllParts()" title="Lock all parts">🔒 Lock</button>
-                        <button class="section-btn" onclick="unlockAllParts()" title="Unlock all parts">🔓 Unlock</button>
+                    
+                    <!-- Search Filter -->
+                    <div style="padding: 8px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border);">
+                        <div style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="part-search" 
+                                placeholder="🔍 Search parts..." 
+                                oninput="filterParts(this.value)"
+                                style="width: 100%; padding: 8px 36px 8px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: 'Rajdhani', sans-serif; font-size: 13px;"
+                            />
+                            <button 
+                                onclick="clearPartSearch()" 
+                                style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 16px; padding: 4px 8px; line-height: 1;"
+                                title="Clear search"
+                            >×</button>
+                        </div>
+                        <div id="search-results-count" style="font-size: 10px; color: var(--text-secondary); margin-top: 4px; font-family: 'Azeret Mono', monospace;"></div>
                     </div>
                 </div>
+                
                 <div id="parts-container">
                     <div class="empty-state">
                         No parts loaded yet.<br>
                         Upload STL files or load a project.
                     </div>
+                </div>
+                
+                <!-- Back to Top Button - Always Visible -->
+                <div class="parts-back-to-top">
+                    <button onclick="scrollPartsToTop()" title="Back to top">
+                        ↑ Top
+                    </button>
                 </div>
             </div>
         </div>
@@ -1742,10 +1885,98 @@
                 💡 Double-click a part to find it in the list
             </div>
             
-            <div class="viewer-controls">
-                <button class="control-btn" onclick="resetCamera()">Reset View</button>
-                <button class="control-btn" onclick="frameModel()">Frame All</button>
-                <button class="control-btn" id="measure-btn" onclick="toggleMeasure()">📏 Measure</button>
+            <!-- Combined View & Rotation Controls Panel -->
+            <div id="control-panel" style="position: absolute; top: 10px; right: 10px; background: rgba(10, 14, 23, 0.95); padding: 12px; border-radius: 8px; border: 1px solid var(--border); z-index: 100; max-width: 240px;">
+                
+                <!-- View Section -->
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                        <div style="font-size: 10px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase;">
+                            👁️ View Controls
+                        </div>
+                        <button onclick="toggleControlPanel()" style="background: transparent; border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-size: 12px; padding: 1px 6px; line-height: 1; border-radius: 3px; font-family: monospace; opacity: 0.7; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="Minimize">−</button>
+                    </div>
+                    
+                    <div id="view-controls-content">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px;">
+                            <button class="control-btn" onclick="resetCamera()" style="padding: 6px; font-size: 9px;">Reset View</button>
+                            <button class="control-btn" onclick="frameModel()" style="padding: 6px; font-size: 9px;">Frame All</button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px;">
+                            <button class="control-btn" id="undo-btn" onclick="undo()" disabled style="padding: 6px; font-size: 9px;" title="Undo (Ctrl+Z)">↶ Undo</button>
+                            <button class="control-btn" id="redo-btn" onclick="redo()" disabled style="padding: 6px; font-size: 9px;" title="Redo (Ctrl+Y)">↷ Redo</button>
+                        </div>
+                        <button class="control-btn" id="measure-btn" onclick="toggleMeasure()" style="width: 100%; padding: 6px; font-size: 9px;">📏 Measure</button>
+                    </div>
+                </div>
+                
+                <!-- Rotate Section -->
+                <div id="rotate-section">
+                    <div style="font-size: 10px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; text-transform: uppercase; margin-bottom: 8px; text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                        🔄 Rotate Model
+                    </div>
+                    
+                    <div id="rotate-controls-content">
+                        <!-- Preset Views -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px;">
+                            <button class="control-btn" onclick="setTopView()" style="padding: 6px; font-size: 9px;" title="Top View">Top</button>
+                            <button class="control-btn" onclick="setFrontView()" style="padding: 6px; font-size: 9px;" title="Front View">Front</button>
+                            <button class="control-btn" onclick="setSideView()" style="padding: 6px; font-size: 9px;" title="Side View">Side</button>
+                            <button class="control-btn" onclick="setBottomView()" style="padding: 6px; font-size: 9px;" title="Bottom View">Bottom</button>
+                            <button class="control-btn" onclick="setBackView()" style="padding: 6px; font-size: 9px;" title="Back View">Back</button>
+                            <button class="control-btn" onclick="setOtherSideView()" style="padding: 6px; font-size: 9px;" title="Other Side View">Other</button>
+                        </div>
+                        
+                        <div style="border-top: 1px solid var(--border); padding-top: 8px; margin-bottom: 8px;"></div>
+                        
+                        <!-- Y-axis rotation (horizontal spin) -->
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                            <button class="control-btn" onclick="rotateLeft90()" style="flex: 1; padding: 8px; font-size: 16px;" title="Rotate 90° Left (Y-axis)">↶</button>
+                            <button class="control-btn" onclick="rotateRight90()" style="flex: 1; padding: 8px; font-size: 16px;" title="Rotate 90° Right (Y-axis)">↷</button>
+                        </div>
+                        
+                        <!-- X-axis rotation (vertical tilt) -->
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                            <button class="control-btn" onclick="rotateUp90()" style="flex: 1; padding: 8px; font-size: 16px;" title="Rotate 90° Up (X-axis)">↑</button>
+                            <button class="control-btn" onclick="rotateDown90()" style="flex: 1; padding: 8px; font-size: 16px;" title="Rotate 90° Down (X-axis)">↓</button>
+                        </div>
+                        
+                        <!-- Fine rotation controls -->
+                        <div style="font-size: 9px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; margin-bottom: 4px; text-align: center;">
+                            Fine Tune (15°)
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px;">
+                            <button class="control-btn" onclick="rotateLeft15()" style="padding: 4px; font-size: 9px;">↶ 15°</button>
+                            <button class="control-btn" onclick="rotateRight15()" style="padding: 4px; font-size: 9px;">↷ 15°</button>
+                            <button class="control-btn" onclick="rotateUp15()" style="padding: 4px; font-size: 9px;">↑ 15°</button>
+                            <button class="control-btn" onclick="rotateDown15()" style="padding: 4px; font-size: 9px;">↓ 15°</button>
+                        </div>
+                        
+                        <!-- Additional rotation options -->
+                        <div style="font-size: 9px; color: var(--text-secondary); font-family: 'Azeret Mono', monospace; margin-bottom: 4px; text-align: center;">
+                            More Angles
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 6px;">
+                            <button class="control-btn" onclick="rotateLeft30()" style="padding: 4px; font-size: 9px;">↶ 30°</button>
+                            <button class="control-btn" onclick="rotateLeft45()" style="padding: 4px; font-size: 9px;">↶ 45°</button>
+                            <button class="control-btn" onclick="rotateLeft60()" style="padding: 4px; font-size: 9px;">↶ 60°</button>
+                            <button class="control-btn" onclick="rotateRight30()" style="padding: 4px; font-size: 9px;">↷ 30°</button>
+                            <button class="control-btn" onclick="rotateRight45()" style="padding: 4px; font-size: 9px;">↷ 45°</button>
+                            <button class="control-btn" onclick="rotateRight60()" style="padding: 4px; font-size: 9px;">↷ 60°</button>
+                        </div>
+                        
+                        <!-- Flip controls -->
+                        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                            <button class="control-btn" onclick="flipHorizontal()" style="flex: 1; padding: 6px; font-size: 10px;" title="Flip 180° Horizontal">↔ Flip H</button>
+                            <button class="control-btn" onclick="flipVertical()" style="flex: 1; padding: 6px; font-size: 10px;" title="Flip 180° Vertical">↕ Flip V</button>
+                        </div>
+                        
+                        <!-- Reset rotation -->
+                        <button class="control-btn" onclick="resetRotation()" style="width: 100%; padding: 6px; font-size: 10px; background: rgba(255, 107, 53, 0.1); border-color: var(--accent-orange); color: var(--accent-orange);">
+                            ⟲ Reset Rotation
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="measurement-overlay" id="measurement-overlay">
@@ -1755,12 +1986,28 @@
                 <div id="bounding-box-info"></div>
             </div>
 
-            <div class="info-overlay">
-                <div><span class="info-label">ROTATE:</span>Left drag</div>
-                <div><span class="info-label">PAN:</span>Right drag</div>
-                <div><span class="info-label">ZOOM:</span>Scroll wheel</div>
-                <div><span class="info-label">PARTS:</span><span id="part-count">0</span> loaded</div>
-                <div id="project-name-display"></div>
+            <div class="info-overlay" id="info-overlay">
+                <div class="info-overlay-header">
+                    <div class="info-overlay-title">⌨️ Keyboard Shortcuts</div>
+                    <button class="info-toggle-btn" onclick="toggleInfoOverlay()" title="Minimize">−</button>
+                </div>
+                <div class="info-content">
+                    <div><span class="info-label">UNDO/REDO:</span>Ctrl+Z / Ctrl+Y</div>
+                    <div><span class="info-label">MOVE PARTS:</span>Shift + Left drag (horizontal)</div>
+                    <div><span class="info-label">MOVE UP/DOWN:</span>Shift + Right drag (vertical)</div>
+                    <div><span class="info-label">VIEWS:</span>1-6 keys (Top/Front/Side/Bottom/Back)</div>
+                    <div><span class="info-label">ROTATE:</span>Left drag or Arrow keys</div>
+                    <div><span class="info-label">SNAP 90°:</span>Shift + Arrows</div>
+                    <div><span class="info-label">FINE 15°:</span>Ctrl + Arrows</div>
+                    <div><span class="info-label">ROLL:</span>Q/E keys</div>
+                    <div><span class="info-label">FLIP:</span>H (horizontal) / V (vertical)</div>
+                    <div><span class="info-label">RESET:</span>R key</div>
+                    <div><span class="info-label">MINIMIZE PANELS:</span>M key</div>
+                    <div><span class="info-label">PAN:</span>Right drag</div>
+                    <div><span class="info-label">ZOOM:</span>Scroll wheel</div>
+                    <div><span class="info-label">PARTS:</span><span id="part-count">0</span> loaded</div>
+                    <div id="project-name-display"></div>
+                </div>
             </div>
             
             <!-- View Disclaimer Link -->
@@ -1791,7 +2038,15 @@
 
     <div class="toast" id="toast"></div>
 
-    <script>
+    <script type="module">
+        // Import Three.js r170 and addons
+        import * as THREE from 'three';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+        import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+        
+        // Make THREE globally available for compatibility
+        window.THREE = THREE;
+        
         // Scene setup
         let scene, camera, renderer, raycaster, mouse;
         let parts = [];
@@ -1805,16 +2060,31 @@
         let selectedGroup = null;
         let animationFrameId = null; // Track animation frame for cleanup
         
+        // Part movement/dragging system
+        let isDragging = false;
+        let draggedPart = null;
+        let dragMode = null; // 'horizontal' for left click, 'vertical' for right click
+        let dragPlane = new THREE.Plane();
+        let dragIntersection = new THREE.Vector3();
+        let dragOffset = new THREE.Vector3();
+        
         // Project state tracking
         let hasUnsavedChanges = false; // Track if current project has unsaved changes
         let currentProjectName = null; // Track current project name
         let isGitHubProject = false; // Track if current project was loaded from GitHub
         let projectLicenseToEmbed = null; // License text to embed when saving GitHub projects
         
+        // Undo/Redo system
+        let history = []; // Array of state snapshots
+        let historyIndex = -1; // Current position in history
+        const MAX_HISTORY = 50; // Maximum number of undo steps
+        let isApplyingHistory = false; // Flag to prevent saving state during undo/redo
+        
         // Folder-based license system (from GitHub LICENSE.txt)
         let currentFolderLicense = null; // License text from LICENSE.txt in current GitHub folder
         let currentFolderPath = null; // Current GitHub folder path
         let pendingProjectUrl = null; // URL of project waiting for license acceptance
+        let pendingManualUrl = null; // Manual URL as fallback
         let licenseAlreadyShown = false; // Track if we already showed license for this load
         
         // GitHub folder browser state
@@ -1879,8 +2149,8 @@
             rimLight.position.set(0, -100, -100);
             scene.add(rimLight);
             
-            loader = new THREE.STLLoader();
-            exporter = new THREE.STLExporter();
+            loader = new STLLoader();
+            exporter = new STLExporter();
             
             setupFileUpload();
             setupControls();
@@ -1896,6 +2166,9 @@
             setTimeout(() => {
                 initGitHubBrowser();
             }, 500);
+            
+            // Setup sticky header floating detection
+            setupStickyHeaderDetection();
         }
 
         function updateProjectDisplay() {
@@ -1907,6 +2180,7 @@
         // PROJECT STATE MANAGEMENT
         function markAsModified() {
             hasUnsavedChanges = true;
+            saveState(); // Save to undo history
             console.log('📝 Project marked as modified');
         }
         
@@ -2102,6 +2376,7 @@
                 console.log('📄 License modal hidden');
             }
             pendingProjectUrl = null; // Clear pending project
+            pendingManualUrl = null; // Clear pending manual URL
         }
 
         // Accept license and load pending project
@@ -2109,17 +2384,19 @@
             console.log('✓ License accepted, loading project...');
             console.log('licenseAlreadyShown flag before load:', licenseAlreadyShown);
             
-            // Save URL before hiding modal (hideLicense clears pendingProjectUrl)
+            // Save URLs before hiding modal (hideLicense clears pending URLs)
             const url = pendingProjectUrl;
+            const manualUrl = pendingManualUrl;
             
-            // Hide modal and clear pending URL
+            // Hide modal and clear pending URLs
             hideLicense();
             
             // Load project if we had a pending URL
             if (url) {
                 console.log('Loading project from URL:', url);
+                console.log('Manual URL fallback:', manualUrl);
                 console.log('licenseAlreadyShown flag at loadProjectFromURL call:', licenseAlreadyShown);
-                loadProjectFromURL(url);
+                loadProjectFromURL(url, manualUrl);
             } else {
                 console.error('❌ No pending project URL found');
             }
@@ -2287,6 +2564,11 @@
                     created: new Date().toISOString(),
                     protected: true,  // Flag indicating files are encrypted
                     license: projectLicense || null,  // Include license if present
+                    assemblyRotation: {  // Save overall assembly rotation
+                        x: modelGroup.rotation.x,
+                        y: modelGroup.rotation.y,
+                        z: modelGroup.rotation.z
+                    },
                     parts: parts.map((part, i) => {
                         // Check if this part has centered geometry or not
                         const tempGeom = part.geometry.clone();
@@ -2545,6 +2827,19 @@ Version: 1.1
                         console.log('Groups restored:', groups.length);
                     }
                     
+                    // Restore assembly rotation if present
+                    if (projectData.assemblyRotation) {
+                        modelGroup.rotation.set(
+                            projectData.assemblyRotation.x,
+                            projectData.assemblyRotation.y,
+                            projectData.assemblyRotation.z
+                        );
+                        console.log('Assembly rotation restored:', projectData.assemblyRotation);
+                    } else {
+                        // No rotation saved, reset to default
+                        modelGroup.rotation.set(0, 0, 0);
+                    }
+                    
                     // Display license if present
                     // (Always show for file uploads since they don't go through GitHub browser)
                     licenseAlreadyShown = false; // Reset flag
@@ -2562,6 +2857,9 @@ Version: 1.1
                         showToast(`⚠️ Loaded ${loadedParts.length}/${projectData.parts.length} parts (${failedParts.length} failed)`);
                         console.warn('Failed parts:', failedParts);
                     }
+                    
+                    // Initialize undo/redo history
+                    initializeHistory();
                     
                     console.log('=== Project Load Complete ===');
 
@@ -2591,8 +2889,9 @@ Version: 1.1
         }
         
         // Load project from URL (GitHub, direct link, etc.)
-        async function loadProjectFromURL(urlParam = null) {
+        async function loadProjectFromURL(urlParam = null, manualUrlParam = null) {
             let url = urlParam;
+            let manualUrl = manualUrlParam;
             
             // If no URL provided, get from input field (user-initiated manual load)
             if (!url) {
@@ -2624,11 +2923,25 @@ Version: 1.1
                 return;
             }
             
-            // Validate URL
+            // Validate and normalize URL
             try {
-                new URL(url);
+                const urlObj = new URL(url);
+                
+                // For GitHub raw URLs, ensure proper encoding
+                if (urlObj.hostname === 'raw.githubusercontent.com') {
+                    console.log('GitHub raw URL detected');
+                    const pathParts = urlObj.pathname.split('/').map(part => {
+                        // Each part should be properly URI encoded
+                        // Decode first in case it's already encoded, then re-encode properly
+                        return encodeURIComponent(decodeURIComponent(part));
+                    });
+                    urlObj.pathname = pathParts.join('/');
+                    url = urlObj.toString();
+                    console.log('Normalized GitHub URL:', url);
+                }
             } catch (e) {
                 showToast('⚠️ Invalid URL format');
+                console.error('Invalid URL:', url, e);
                 return;
             }
             
@@ -2636,16 +2949,129 @@ Version: 1.1
             console.log('=== Loading Project from URL ===');
             console.log('URL:', url);
             
+            let contentLength = null; // Store for error handling
+            
             try {
-                // Fetch the project file
-                const response = await fetch(url);
+                // Try to fetch with detailed error handling
+                console.log('Fetching URL:', url);
                 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+                let response;
+                let lastError;
+                
+                // Try primary URL first
+                try {
+                    response = await fetch(url, {
+                        method: 'GET',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: {
+                            'Accept': 'application/octet-stream, application/zip, */*'
+                        }
+                    });
+                    
+                    console.log('Primary URL response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                } catch (fetchError) {
+                    console.error('Primary URL fetch failed:', fetchError);
+                    lastError = fetchError;
+                    
+                    // If we have a manual URL and primary failed, try it
+                    if (manualUrl && manualUrl !== url) {
+                        console.warn('⚠️ Primary URL failed, trying manual URL...');
+                        console.log('Manual URL:', manualUrl);
+                        
+                        try {
+                            response = await fetch(manualUrl, {
+                                method: 'GET',
+                                mode: 'cors',
+                                cache: 'no-cache',
+                                headers: {
+                                    'Accept': 'application/octet-stream, application/zip, */*'
+                                }
+                            });
+                            
+                            console.log('Manual URL response status:', response.status);
+                            
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                            }
+                            
+                            console.log('✓ Manual URL succeeded!');
+                        } catch (manualFetchError) {
+                            console.error('Manual URL also failed:', manualFetchError);
+                            // Both failed, throw the original error with both URLs
+                            throw new Error(`Both URLs failed. Primary: ${fetchError.message}. Manual: ${manualFetchError.message}`);
+                        }
+                    } else {
+                        // No manual URL to try, re-throw the error
+                        throw new Error(`Network error: ${fetchError.message}. This may be due to CORS restrictions, network issues, or the file not existing on GitHub.`);
+                    }
                 }
                 
-                const blob = await response.blob();
-                console.log('Downloaded blob, size:', blob.size);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                // Check content-length if available
+                contentLength = response.headers.get('content-length');
+                if (contentLength) {
+                    console.log('Content-Length:', contentLength, 'bytes');
+                    if (parseInt(contentLength) === 0) {
+                        throw new Error('Server reports file is empty (Content-Length: 0)');
+                    }
+                }
+                
+                // Try to download the blob with timeout
+                console.log('Downloading file blob...');
+                let blob;
+                try {
+                    // Add timeout for blob download (30 seconds)
+                    const blobPromise = response.blob();
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Blob download timeout')), 30000)
+                    );
+                    
+                    blob = await Promise.race([blobPromise, timeoutPromise]);
+                    console.log('✓ Downloaded blob, size:', blob.size, 'type:', blob.type);
+                } catch (blobError) {
+                    console.error('Blob download failed:', blobError);
+                    
+                    // If we have a manual URL and blob download failed, try manual URL
+                    if (manualUrl && manualUrl !== url) {
+                        console.warn('⚠️ Blob download failed on primary URL, trying manual URL...');
+                        
+                        try {
+                            const manualResponse = await fetch(manualUrl, {
+                                method: 'GET',
+                                mode: 'cors',
+                                cache: 'no-cache',
+                                headers: {
+                                    'Accept': 'application/octet-stream, application/zip, */*'
+                                }
+                            });
+                            
+                            console.log('Manual URL response status:', manualResponse.status);
+                            
+                            if (!manualResponse.ok) {
+                                throw new Error(`HTTP ${manualResponse.status}: ${manualResponse.statusText}`);
+                            }
+                            
+                            console.log('Downloading blob from manual URL...');
+                            blob = await manualResponse.blob();
+                            console.log('✓ Manual URL blob download succeeded! Size:', blob.size);
+                        } catch (manualError) {
+                            console.error('Manual URL also failed:', manualError);
+                            throw new Error(`Both URLs failed during download. Primary: ${blobError.message}. Manual: ${manualError.message}`);
+                        }
+                    } else {
+                        throw blobError;
+                    }
+                }
+                
+                if (blob.size === 0) {
+                    throw new Error('Downloaded file is empty (0 bytes)');
+                }
                 
                 // Convert blob to file for consistent handling
                 const file = new File([blob], 'project.stlproject', { type: 'application/zip' });
@@ -2743,6 +3169,19 @@ Version: 1.1
                     console.log('Groups restored:', groups.length);
                 }
                 
+                // Restore assembly rotation if present
+                if (projectData.assemblyRotation) {
+                    modelGroup.rotation.set(
+                        projectData.assemblyRotation.x,
+                        projectData.assemblyRotation.y,
+                        projectData.assemblyRotation.z
+                    );
+                    console.log('Assembly rotation restored:', projectData.assemblyRotation);
+                } else {
+                    // No rotation saved, reset to default
+                    modelGroup.rotation.set(0, 0, 0);
+                }
+                
                 // Display license if present (but not if already shown from GitHub folder)
                 console.log('🔍 License check:', {
                     'projectData.license exists': !!projectData.license,
@@ -2781,6 +3220,9 @@ Version: 1.1
                     console.warn('Failed parts:', failedParts);
                 }
                 
+                // Initialize undo/redo history
+                initializeHistory();
+                
                 // Clear URL input on success
                 const urlInput = document.getElementById('project-url-input');
                 if (urlInput && !urlParam) urlInput.value = '';
@@ -2791,36 +3233,140 @@ Version: 1.1
                 console.error('=== Load Project from URL Error ===');
                 console.error('Error:', err);
                 console.error('Stack:', err.stack);
+                console.error('URL that failed:', url);
                 
                 let errorMsg = err.message;
+                let troubleshootingTips = [];
                 
-                // Provide helpful error messages
-                if (err.message.includes('Failed to fetch')) {
-                    errorMsg = 'Cannot load file. Check: 1) URL is correct, 2) File is publicly accessible, 3) CORS is enabled';
+                // Check if this was a large file (>10MB) based on Content-Length
+                const isLargeFile = contentLength && parseInt(contentLength) > 10000000;
+                const fileSizeMB = contentLength ? (parseInt(contentLength) / 1024 / 1024).toFixed(1) : '?';
+                
+                // Provide helpful error messages based on error type
+                if (err.message.includes('Network error') || err.message.includes('Failed to fetch') || err.message.includes('Blob download')) {
+                    if (isLargeFile) {
+                        errorMsg = `⚠️ File is too large for browser download (${fileSizeMB} MB)`;
+                        troubleshootingTips = [
+                            '🎯 RECOMMENDED SOLUTION: Download manually from GitHub',
+                            '',
+                            'Steps:',
+                            '  1. Go to your GitHub repo',
+                            '  2. Navigate to the file location',
+                            '  3. Click the Download button',
+                            '  4. Drag the .stlproject file into Print Palette',
+                            '',
+                            '📎 Direct link to file:',
+                            '  https://github.com/MrBaristaNZ/PrintPalette/blob/main/',
+                            '  Projects/Blasters/Leedle%20Dynamics/Paid/',
+                            '  Lanka%20II%20-%20Leedle%20Dynamic%20V1.1.stlproject',
+                            '',
+                            '💡 TIP: Large files (10+ MB) often fail in browser.',
+                            '   Manual download is the most reliable method.'
+                        ];
+                    } else {
+                        errorMsg = '⚠️ Cannot load file from GitHub';
+                        troubleshootingTips = [
+                            '1. The file might be too large - try downloading it manually first',
+                            '2. Check if your browser is blocking the download',
+                            '3. Disable browser extensions (ad blockers, etc.) temporarily',
+                            '4. Try a different browser (Chrome, Firefox, Edge)',
+                            '5. Check your antivirus/firewall settings',
+                            '6. GitHub may be experiencing issues - try again later'
+                        ];
+                    }
+                } else if (err.message.includes('timeout')) {
+                    errorMsg = '⚠️ File download timed out or was interrupted';
+                    troubleshootingTips = [
+                        '1. The file may be very large - try again with a better connection',
+                        '2. Download the .stlproject file manually from GitHub',
+                        '3. Use drag & drop to load the downloaded file',
+                        '4. Check your internet connection stability',
+                        '5. Try again during off-peak hours'
+                    ];
+                } else if (err.message.includes('Invalid project file')) {
+                    errorMsg = '⚠️ File is not a valid .stlproject format';
+                } else if (err.message.includes('Project has no parts')) {
+                    errorMsg = '⚠️ Project file contains no 3D parts';
                 }
                 
-                showToast('⚠️ Error loading from URL: ' + errorMsg);
+                showToast(errorMsg);
+                
+                // Show detailed troubleshooting in console
+                if (troubleshootingTips.length > 0) {
+                    console.warn('=== Troubleshooting Tips ===');
+                    troubleshootingTips.forEach(tip => console.warn(tip));
+                    
+                    // Parse the URL to show the filename
+                    try {
+                        const urlObj = new URL(url);
+                        const filename = decodeURIComponent(urlObj.pathname.split('/').pop());
+                        console.warn('Filename:', filename);
+                        
+                        // Check for problematic characters
+                        if (/[^a-zA-Z0-9._\-\s]/.test(filename)) {
+                            console.warn('⚠️ WARNING: Filename contains special characters that may cause issues');
+                            console.warn('Problematic characters detected:', filename.match(/[^a-zA-Z0-9._\-\s]/g));
+                        }
+                        
+                        if (filename.includes(' ')) {
+                            console.warn('ℹ️ Filename contains spaces - this is usually OK if properly encoded');
+                        }
+                    } catch (parseErr) {
+                        console.error('Could not parse URL for debugging:', parseErr);
+                    }
+                }
                 
                 // Show detailed error
                 const errorDetail = document.createElement('div');
-                errorDetail.style.cssText = 'position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 107, 0.95); color: white; padding: 20px; border-radius: 8px; z-index: 10000; max-width: 500px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);';
+                errorDetail.style.cssText = 'position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(255, 0, 107, 0.95); color: white; padding: 20px; border-radius: 8px; z-index: 10000; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);';
+                
+                // Special handling for large files
+                let additionalInfo = '';
+                if (isLargeFile) {
+                    additionalInfo = `
+                        <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #fff;">
+                            <strong style="font-size: 16px;">🎯 Recommended Solution:</strong><br><br>
+                            <strong>Download manually from GitHub:</strong>
+                            <ol style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+                                <li>Click the button below to open the file on GitHub</li>
+                                <li>Click the "Download" button on GitHub</li>
+                                <li>Drag the downloaded .stlproject file into Print Palette</li>
+                            </ol>
+                            <a href="https://github.com/MrBaristaNZ/PrintPalette/blob/main/Projects/Blasters/Leedle%20Dynamics/Paid/Lanka%20II%20-%20Leedle%20Dynamic%20V1.1.stlproject" 
+                               target="_blank" 
+                               style="display: block; background: white; color: #ff006b; text-decoration: none; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; margin: 10px 0; transition: all 0.3s;"
+                               onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)';"
+                               onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                                📂 Open File on GitHub
+                            </a>
+                            <div style="font-size: 13px; opacity: 0.9; margin-top: 10px;">
+                                💡 <strong>Why?</strong> Large files (${fileSizeMB}+ MB) often fail in browser downloads. Manual download is more reliable.
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    additionalInfo = `
+                        <div style="font-size: 11px; opacity: 0.9; margin: 10px 0;">
+                            <strong>For GitHub files:</strong><br>
+                            Use "raw" URL format:<br>
+                            <code style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 3px; display: block; margin: 4px 0;">
+                            https://raw.githubusercontent.com/<br>username/repo/branch/file.stlproject
+                            </code>
+                        </div>
+                    `;
+                }
+                
                 errorDetail.innerHTML = `
                     <strong style="font-size: 18px;">Load from URL Error:</strong><br><br>
                     <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; margin: 10px 0; word-break: break-all;">
                         ${errorMsg}
                     </div>
-                    <div style="font-size: 11px; opacity: 0.9; margin: 10px 0;">
-                        <strong>For GitHub files:</strong><br>
-                        Use "raw" URL format:<br>
-                        <code style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 3px; display: block; margin: 4px 0;">
-                        https://raw.githubusercontent.com/<br>username/repo/branch/file.stlproject
-                        </code>
-                    </div>
+                    ${additionalInfo}
                     <small style="opacity: 0.8;">Check console (F12) for detailed error information</small><br><br>
                     <button onclick="this.parentElement.remove()" style="width: 100%; margin-top: 10px; padding: 10px; background: white; color: #ff006b; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Close</button>
                 `;
                 document.body.appendChild(errorDetail);
-                setTimeout(() => errorDetail.remove(), 20000);
+                setTimeout(() => errorDetail.remove(), 30000); // Extended to 30s for large file instructions
             }
         }
         
@@ -3039,14 +3585,29 @@ Version: 1.1
                 for (const item of items) {
                     if (item.type === 'file' && item.name.toLowerCase().endsWith('.stlproject')) {
                         // Found a project file
+                        
+                        // Get download URL from GitHub API
+                        const apiDownloadUrl = item.download_url;
+                        
+                        // Also construct manual download URL as backup
+                        // Format: https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}/{filename}
+                        const encodedPath = path ? path.split('/').map(encodeURIComponent).join('/') + '/' : '';
+                        const encodedFilename = encodeURIComponent(item.name);
+                        const manualDownloadUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${encodedPath}${encodedFilename}`;
+                        
+                        console.log(`✓ Found project: ${item.name} in ${path}`);
+                        console.log(`  API URL: ${apiDownloadUrl}`);
+                        console.log(`  Manual URL: ${manualDownloadUrl}`);
+                        console.log(`  URLs match: ${apiDownloadUrl === manualDownloadUrl}`);
+                        
                         projects.push({
                             name: item.name,
-                            downloadUrl: item.download_url,
+                            downloadUrl: apiDownloadUrl,
+                            manualUrl: manualDownloadUrl, // Store both
                             folderPath: path,
                             license: folderLicense,
                             displayName: path ? `${path}/${item.name}` : item.name
                         });
-                        console.log(`✓ Found project: ${item.name} in ${path}`);
                     } else if (item.type === 'dir') {
                         // Recursively search subdirectory
                         const subPath = path ? `${path}/${item.name}` : item.name;
@@ -3124,6 +3685,11 @@ Version: 1.1
                             const option = document.createElement('option');
                             option.value = project.downloadUrl;
                             option.textContent = project.name.replace('.stlproject', '');
+                            
+                            // Store manual URL as backup
+                            if (project.manualUrl) {
+                                option.setAttribute('data-manual-url', project.manualUrl);
+                            }
                             
                             // Store license and folder path as data attributes
                             if (project.license) {
@@ -3403,14 +3969,6 @@ Version: 1.1
             }
         }
         
-        function updateGitHubBrowserInfo() {
-            const infoSpan = document.getElementById('github-repo-info');
-            const settings = getGitHubSettings();
-            
-            if (infoSpan) {
-                infoSpan.innerHTML = `<span style="color: var(--accent-cyan);">✓</span> ${settings.owner}/${settings.repo}/${githubBrowserCurrentPath || settings.path}`;
-            }
-        }
         
         function loadSelectedGitHubProject() {
             const dropdown = document.getElementById('github-project-dropdown');
@@ -3421,15 +3979,17 @@ Version: 1.1
             console.log('=== Loading GitHub Project ===');
             console.log('Project URL:', url);
             
-            // Get project name and license from dropdown
+            // Get project name, license, and manual URL from dropdown
             const selectedOption = dropdown.options[dropdown.selectedIndex];
             const projectName = selectedOption ? selectedOption.textContent : 'Project';
             const projectLicense = selectedOption ? selectedOption.getAttribute('data-license') : null;
             const folderPath = selectedOption ? selectedOption.getAttribute('data-folder-path') : '';
+            const manualUrl = selectedOption ? selectedOption.getAttribute('data-manual-url') : null;
             
             console.log('Project name:', projectName);
             console.log('Folder path:', folderPath);
             console.log('Has license:', !!projectLicense);
+            console.log('Manual URL:', manualUrl);
             
             // Store for license modal
             currentFolderLicense = projectLicense;
@@ -3442,7 +4002,9 @@ Version: 1.1
                 
                 // Store the URL to load after license acceptance
                 pendingProjectUrl = url;
+                pendingManualUrl = manualUrl;
                 console.log('✓ Stored pending project URL:', url);
+                console.log('✓ Stored pending manual URL:', manualUrl);
                 
                 // Mark that we're showing license (to prevent double-show after load)
                 licenseAlreadyShown = true;
@@ -3453,7 +4015,7 @@ Version: 1.1
             } else {
                 // No license, load directly
                 licenseAlreadyShown = false;
-                loadProjectFromURL(url, false);
+                loadProjectFromURL(url, manualUrl);
             }
             
             // Reset dropdown selection
@@ -3641,6 +4203,10 @@ Version: 1.1
             if (projectNameInput) {
                 projectNameInput.value = 'Untitled Project';
             }
+            
+            // Note: Don't reset GitHub/license state here
+            // That's handled by the load functions or clearAll()
+            // This keeps clearAllSilent focused on just clearing the scene
             
             // Rebuild UI
             rebuildUI();
@@ -4170,6 +4736,85 @@ Version: 1.1
             showToast('All parts collapsed');
         }
         
+        // Filter parts based on search query
+        function filterParts(query) {
+            query = query.toLowerCase().trim();
+            let visibleCount = 0;
+            let hiddenCount = 0;
+            
+            parts.forEach((part, index) => {
+                const card = document.getElementById(`part-card-${index}`);
+                if (!card) return;
+                
+                const partName = part.userData.name.toLowerCase();
+                
+                if (query === '' || partName.includes(query)) {
+                    // Show matching parts
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    // Hide non-matching parts
+                    card.style.display = 'none';
+                    hiddenCount++;
+                }
+            });
+            
+            // Update search results count
+            const resultsDiv = document.getElementById('search-results-count');
+            if (resultsDiv) {
+                if (query === '') {
+                    resultsDiv.textContent = '';
+                } else {
+                    resultsDiv.textContent = `Showing ${visibleCount} of ${parts.length} parts`;
+                    if (visibleCount === 0) {
+                        resultsDiv.style.color = 'var(--accent-magenta)';
+                        resultsDiv.textContent += ' - No matches found';
+                    } else {
+                        resultsDiv.style.color = 'var(--text-secondary)';
+                    }
+                }
+            }
+            
+            console.log(`Filter: "${query}" - Showing ${visibleCount}, Hidden ${hiddenCount}`);
+        }
+        
+        // Clear search filter
+        function clearPartSearch() {
+            const searchInput = document.getElementById('part-search');
+            if (searchInput) {
+                searchInput.value = '';
+                filterParts('');
+            }
+        }
+        
+        // Scroll parts list to top
+        function scrollPartsToTop() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+        }
+        
+        // Setup sticky header floating detection
+        function setupStickyHeaderDetection() {
+            const sidebar = document.querySelector('.sidebar');
+            const stickyHeader = document.querySelector('.part-section-sticky-header');
+            
+            if (!sidebar || !stickyHeader) return;
+            
+            // Detect scroll and add floating class when scrolled
+            sidebar.addEventListener('scroll', () => {
+                if (sidebar.scrollTop > 10) {
+                    stickyHeader.classList.add('is-floating');
+                } else {
+                    stickyHeader.classList.remove('is-floating');
+                }
+            });
+        }
+        
         function lockAllParts() {
             let lockedCount = 0;
             parts.forEach((part, index) => {
@@ -4576,77 +5221,203 @@ Version: 1.1
         }
 
         async function handleFiles(files) {
+            // Separate STL files from project files
+            const stlFiles = [];
+            const projectFiles = [];
+            
             for (const file of files) {
                 if (file.name.toLowerCase().endsWith('.stlproject')) {
-                    // It's a project file - load it
-                    const zip = await JSZip.loadAsync(file);
-                    const projectJsonFile = zip.file("project.json");
-                    if (projectJsonFile) {
-                        const projectData = JSON.parse(await projectJsonFile.async("text"));
-                        
-                        clearAllSilent();
-                        document.getElementById('project-name').value = projectData.projectName;
-                        currentProjectName = projectData.projectName;
-                        hasUnsavedChanges = false; // Fresh project load
-                        clearGitHubProjectStatus(); // Not a GitHub project - unlock name
-                        resetGitHubFolderState(); // Clear any GitHub folder state
-                        updateProjectDisplay();
-                        
-                        if (projectData.colors) {
-                            presetColors = projectData.colors;
-                            renderColorGrid();
-                        }
-                        
-                        // Determine if project is encrypted
-                        const isProtected = projectData.protected === true;
-                        const folderName = isProtected ? "data" : "stl_files";
-                        const encryptionKey = isProtected ? generateEncryptionKey(projectData.projectName) : null;
-                        
-                        const stlFolder = zip.folder(folderName);
-                        for (const partData of projectData.parts) {
-                            const stlFile = stlFolder.file(partData.fileName);
-                            if (stlFile) {
-                                let arrayBuffer = await stlFile.async("arraybuffer");
-                                
-                                // Decrypt if protected
-                                if (isProtected) {
-                                    arrayBuffer = decryptBuffer(arrayBuffer, encryptionKey);
-                                }
-                                
-                                await loadSTLFromBuffer(arrayBuffer, partData, projectData.version || "1.0");
-                            }
-                        }
-                        
-                        // Restore groups if present
-                        if (projectData.groups && Array.isArray(projectData.groups)) {
-                            groups = projectData.groups.map(g => ({
-                                name: g.name,
-                                parts: new Set(g.parts),
-                                color: g.color || '#ffffff'
-                            }));
-                            renderGroupSelector();
-                            console.log('Groups restored:', groups.length);
-                        }
-                        
-                        // Display license if present
-                        // (Always show for drag & drop since they don't go through GitHub browser)
-                        licenseAlreadyShown = false; // Reset flag
-                        if (projectData.license) {
-                            console.log('✓ License found in project');
-                            setTimeout(() => {
-                                showLicense(projectData.license, `${projectData.projectName} - License`);
-                            }, 500);
-                        }
-                        
-                        frameModel();
-                        showToast(`📂 Project "${projectData.projectName}" loaded!`);
-                    }
+                    projectFiles.push(file);
                 } else if (file.name.toLowerCase().endsWith('.stl')) {
-                    loadSTL(file);
+                    stlFiles.push(file);
                 } else {
                     showToast('⚠️ Please upload .stl or .stlproject files');
                 }
             }
+            
+            // Load project files sequentially (they clear the scene)
+            for (const file of projectFiles) {
+                const zip = await JSZip.loadAsync(file);
+                const projectJsonFile = zip.file("project.json");
+                if (projectJsonFile) {
+                    const projectData = JSON.parse(await projectJsonFile.async("text"));
+                    
+                    clearAllSilent();
+                    document.getElementById('project-name').value = projectData.projectName;
+                    currentProjectName = projectData.projectName;
+                    hasUnsavedChanges = false; // Fresh project load
+                    clearGitHubProjectStatus(); // Not a GitHub project - unlock name
+                    resetGitHubFolderState(); // Clear any GitHub folder state
+                    updateProjectDisplay();
+                    
+                    if (projectData.colors) {
+                        presetColors = projectData.colors;
+                        renderColorGrid();
+                    }
+                    
+                    // Determine if project is encrypted
+                    const isProtected = projectData.protected === true;
+                    const folderName = isProtected ? "data" : "stl_files";
+                    const encryptionKey = isProtected ? generateEncryptionKey(projectData.projectName) : null;
+                    
+                    const stlFolder = zip.folder(folderName);
+                    for (const partData of projectData.parts) {
+                        const stlFile = stlFolder.file(partData.fileName);
+                        if (stlFile) {
+                            let arrayBuffer = await stlFile.async("arraybuffer");
+                            
+                            // Decrypt if protected
+                            if (isProtected) {
+                                arrayBuffer = decryptBuffer(arrayBuffer, encryptionKey);
+                            }
+                            
+                            await loadSTLFromBuffer(arrayBuffer, partData, projectData.version || "1.0");
+                        }
+                    }
+                    
+                    // Restore groups if present
+                    if (projectData.groups && Array.isArray(projectData.groups)) {
+                        groups = projectData.groups.map(g => ({
+                            name: g.name,
+                            parts: new Set(g.parts),
+                            color: g.color || '#ffffff'
+                        }));
+                        renderGroupSelector();
+                        console.log('Groups restored:', groups.length);
+                    }
+                    
+                    // Restore assembly rotation if present
+                    if (projectData.assemblyRotation) {
+                        modelGroup.rotation.set(
+                            projectData.assemblyRotation.x,
+                            projectData.assemblyRotation.y,
+                            projectData.assemblyRotation.z
+                        );
+                        console.log('Assembly rotation restored:', projectData.assemblyRotation);
+                    } else {
+                        // No rotation saved, reset to default
+                        modelGroup.rotation.set(0, 0, 0);
+                    }
+                    
+                    // Display license if present
+                    // (Always show for drag & drop since they don't go through GitHub browser)
+                    licenseAlreadyShown = false; // Reset flag
+                    if (projectData.license) {
+                        console.log('✓ License found in project');
+                        setTimeout(() => {
+                            showLicense(projectData.license, `${projectData.projectName} - License`);
+                        }, 500);
+                    }
+                    
+                    frameModel();
+                    showToast(`📂 Project "${projectData.projectName}" loaded!`);
+                }
+            }
+            
+            // Load STL files in parallel for speed
+            if (stlFiles.length > 0) {
+                if (stlFiles.length > 1) {
+                    showToast(`⏳ Loading ${stlFiles.length} files in parallel...`);
+                }
+                
+                const startTime = Date.now();
+                
+                // Load all files in parallel
+                const loadPromises = stlFiles.map(file => loadSTLAsync(file));
+                
+                try {
+                    await Promise.all(loadPromises);
+                    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                    showToast(`✓ Loaded ${stlFiles.length} file(s) in ${elapsed}s`);
+                    
+                    // Frame all parts after loading
+                    if (parts.length > 0) {
+                        frameModel();
+                    }
+                    
+                    // Initialize history after loading
+                    initializeHistory();
+                } catch (error) {
+                    console.error('Error loading files:', error);
+                    showToast('❌ Some files failed to load');
+                }
+            }
+        }
+        
+        // Async STL loader with Promise
+        function loadSTLAsync(file) {
+            return new Promise((resolve, reject) => {
+                console.log('Loading STL file:', file.name);
+                
+                const reader = new FileReader();
+                
+                reader.onerror = (error) => {
+                    console.error('File read error:', error);
+                    showToast('❌ Error reading file: ' + file.name);
+                    reject(error);
+                };
+                
+                reader.onload = (e) => {
+                    try {
+                        console.log('File loaded, parsing geometry:', file.name);
+                        const geometry = loader.parse(e.target.result);
+                        console.log('Geometry parsed successfully');
+                        
+                        // Center geometry for rotation on the spot (version 1.1 behavior)
+                        const centerOffset = new THREE.Vector3();
+                        geometry.computeBoundingBox();
+                        geometry.boundingBox.getCenter(centerOffset);
+                        geometry.center();
+                        
+                        const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)];
+                        
+                        const material = new THREE.MeshStandardMaterial({
+                            color: randomColor,
+                            metalness: 0.3,
+                            roughness: 0.4,
+                            flatShading: false
+                        });
+                        
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.userData = {
+                            name: file.name.replace('.stl', ''),
+                            visible: true,
+                            color: randomColor,
+                            position: { x: 0, y: 0, z: 0 },
+                            rotation: { x: 0, y: 0, z: 0 },
+                            locked: false,
+                            centerOffset: { x: centerOffset.x, y: centerOffset.y, z: centerOffset.z }
+                        };
+                        
+                        // Set position with offset (newly uploaded files start centered)
+                        mesh.position.set(centerOffset.x, centerOffset.y, centerOffset.z);
+                        
+                        // Store file for export
+                        partFiles[file.name] = file;
+                        
+                        console.log('Adding mesh to scene...');
+                        modelGroup.add(mesh);
+                        parts.push(mesh);
+                        
+                        console.log('Creating UI controls...');
+                        addPartControl(parts.length - 1);
+                        updatePartCount();
+                        updateBoundingBox();
+                        updateCoordinates(parts.length - 1);
+                        
+                        markAsModified(); // New part added to project
+                        console.log('✓ STL loaded:', file.name);
+                        resolve();
+                    } catch (error) {
+                        console.error('Error processing STL:', error);
+                        showToast('❌ Error loading: ' + file.name);
+                        reject(error);
+                    }
+                };
+                
+                console.log('Starting file read...');
+                reader.readAsArrayBuffer(file);
+            });
         }
 
         function loadSTL(file) {
@@ -5198,22 +5969,62 @@ Version: 1.1
             console.log('Parts count:', parts.length);
             console.log('Groups count:', groups.length);
             
-            const message = parts.length > 0 
-                ? `Start a new project? This will clear all ${parts.length} part(s) and ${groups.length} group(s).\n\nMake sure you've saved your current project!`
-                : 'Start a new project?';
-            
-            console.log('Showing confirm dialog...');
-            const userConfirmed = confirm(message);
-            console.log('User confirmed:', userConfirmed);
-            
-            if (userConfirmed) {
-                console.log('Clearing all...');
-                clearAllSilent();
-                showToast('✓ New project started');
-                console.log('Clear complete');
+            // Check if there are unsaved changes
+            if (hasUnsavedChanges && parts.length > 0) {
+                const projectName = currentProjectName || 'Current Project';
+                const saveMessage = `You have unsaved changes in "${projectName}".\n\nClick OK to SAVE before starting new project, or Cancel to DISCARD and start fresh.`;
+                
+                const saveFirst = confirm(saveMessage);
+                
+                if (saveFirst) {
+                    // User wants to save first
+                    console.log('User chose to save before new project');
+                    saveProject().then(() => {
+                        const continueNew = confirm('Project saved! Continue with new project?');
+                        if (continueNew) {
+                            performNewProject();
+                        }
+                    });
+                    return; // Exit early, will continue in promise
+                } else {
+                    // User chose to discard and start new
+                    console.log('User chose to discard and start new project');
+                    performNewProject();
+                }
             } else {
-                console.log('User cancelled');
+                // No unsaved changes, just confirm
+                const message = parts.length > 0 
+                    ? `Start a new project? This will clear all ${parts.length} part(s) and ${groups.length} group(s).`
+                    : 'Start a new project?';
+                
+                console.log('Showing confirm dialog...');
+                const userConfirmed = confirm(message);
+                console.log('User confirmed:', userConfirmed);
+                
+                if (userConfirmed) {
+                    performNewProject();
+                } else {
+                    console.log('User cancelled');
+                }
             }
+        }
+        
+        function performNewProject() {
+            console.log('Performing new project setup...');
+            clearAllSilent();
+            
+            // Reset all GitHub and project state
+            clearGitHubProjectStatus(); // Unlock name, remove badge
+            resetGitHubFolderState(); // Clear folder license state
+            hasUnsavedChanges = false; // Reset unsaved flag
+            currentProjectName = null; // Clear project name tracking
+            clearHistory(); // Clear undo/redo history
+            
+            console.log('✓ Project state fully reset');
+            console.log('✓ Name unlocked and editable');
+            console.log('✓ GitHub folder state cleared');
+            console.log('✓ Undo/redo history cleared');
+            showToast('✓ New project started');
         }
 
         function highlightPartInSidebar(partIndex) {
@@ -5302,12 +6113,8 @@ Version: 1.1
         function frameModel() {
             if (parts.length === 0) return;
             
-            const box = new THREE.Box3();
-            parts.forEach(part => {
-                if (part.visible) {
-                    box.expandByObject(part);
-                }
-            });
+            // Create bounding box that includes the entire modelGroup with rotation
+            const box = new THREE.Box3().setFromObject(modelGroup);
             
             const center = new THREE.Vector3();
             box.getCenter(center);
@@ -5317,16 +6124,439 @@ Version: 1.1
             const maxDim = Math.max(size.x, size.y, size.z);
             const fov = camera.fov * (Math.PI / 180);
             let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-            cameraZ *= 2;
+            cameraZ *= 2.2; // Slightly more padding
             
             camera.position.set(center.x + cameraZ * 0.5, center.y + cameraZ * 0.5, center.z + cameraZ);
             camera.lookAt(center);
+            
+            console.log('✓ Frame All: Model centered in view');
         }
 
         function resetCamera() {
             camera.position.set(0, 50, 150);
             camera.lookAt(0, 0, 0);
             modelGroup.rotation.set(0, 0, 0);
+        }
+        
+        // Toggle control panel minimize/expand
+        let controlPanelMinimized = false;
+        function toggleControlPanel() {
+            const rotateSection = document.getElementById('rotate-section');
+            const viewContent = document.getElementById('view-controls-content');
+            const panel = document.getElementById('control-panel');
+            
+            // Check if elements exist - if not, silently return (panels might not be loaded yet)
+            if (!rotateSection || !viewContent || !panel) {
+                return;
+            }
+            
+            // Get toggle button - from event if clicked, or find it if keyboard triggered
+            let toggleBtn = null;
+            try {
+                if (typeof event !== 'undefined' && event && event.target) {
+                    toggleBtn = event.target;
+                } else {
+                    // Find the button when triggered by keyboard
+                    if (panel) {
+                        toggleBtn = panel.querySelector('button[onclick*="toggleControlPanel"]');
+                    }
+                }
+            } catch (e) {
+                // Silently handle error
+            }
+            
+            controlPanelMinimized = !controlPanelMinimized;
+            
+            if (controlPanelMinimized) {
+                // Minimize
+                rotateSection.style.display = 'none';
+                viewContent.style.display = 'none';
+                panel.style.maxWidth = 'auto';
+                if (toggleBtn) {
+                    toggleBtn.textContent = '+';
+                    toggleBtn.title = 'Expand';
+                }
+            } else {
+                // Expand
+                rotateSection.style.display = 'block';
+                viewContent.style.display = 'block';
+                panel.style.maxWidth = '240px';
+                if (toggleBtn) {
+                    toggleBtn.textContent = '−';
+                    toggleBtn.title = 'Minimize';
+                }
+            }
+        }
+        
+        // Info overlay toggle
+        let infoOverlayMinimized = false;
+        
+        function toggleInfoOverlay() {
+            const overlay = document.getElementById('info-overlay');
+            const toggleBtn = overlay ? overlay.querySelector('.info-toggle-btn') : null;
+            
+            // If overlay doesn't exist, silently return (might not be loaded yet)
+            if (!overlay) {
+                return;
+            }
+            
+            infoOverlayMinimized = !infoOverlayMinimized;
+            
+            if (infoOverlayMinimized) {
+                // Minimize
+                overlay.classList.add('minimized');
+                if (toggleBtn) {
+                    toggleBtn.textContent = '+';
+                    toggleBtn.title = 'Expand';
+                }
+            } else {
+                // Expand
+                overlay.classList.remove('minimized');
+                if (toggleBtn) {
+                    toggleBtn.textContent = '−';
+                    toggleBtn.title = 'Minimize';
+                }
+            }
+        }
+        
+        // UNDO/REDO SYSTEM
+        
+        // Capture current state
+        function captureState() {
+            if (isApplyingHistory) return; // Don't capture during undo/redo
+            
+            const state = {
+                parts: parts.map((part, idx) => ({
+                    name: part.userData.name,
+                    color: part.userData.color,
+                    visible: part.userData.visible,
+                    locked: part.userData.locked,
+                    position: { ...part.userData.position },
+                    rotation: { ...part.userData.rotation }
+                })),
+                groups: groups.map(g => ({
+                    name: g.name,
+                    parts: Array.from(g.parts),
+                    color: g.color
+                })),
+                selectedGroup: selectedGroup ? selectedGroup.name : null,
+                modelRotation: {
+                    x: modelGroup.rotation.x,
+                    y: modelGroup.rotation.y,
+                    z: modelGroup.rotation.z
+                }
+            };
+            
+            return state;
+        }
+        
+        // Save current state to history
+        function saveState() {
+            if (isApplyingHistory) return; // Don't save during undo/redo
+            if (parts.length === 0) return; // Don't save empty states
+            
+            const state = captureState();
+            
+            // Remove any future states if we're not at the end
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
+            }
+            
+            // Add new state
+            history.push(state);
+            
+            // Limit history size
+            if (history.length > MAX_HISTORY) {
+                history.shift();
+            } else {
+                historyIndex++;
+            }
+            
+            updateUndoRedoButtons();
+            console.log(`💾 State saved (${historyIndex + 1}/${history.length})`);
+        }
+        
+        // Apply a state from history
+        function applyState(state) {
+            isApplyingHistory = true;
+            
+            try {
+                // Restore part properties
+                parts.forEach((part, idx) => {
+                    if (state.parts[idx]) {
+                        const savedPart = state.parts[idx];
+                        
+                        // Restore color
+                        if (part.userData.color !== savedPart.color) {
+                            part.userData.color = savedPart.color;
+                            part.material.color.setStyle(savedPart.color);
+                        }
+                        
+                        // Restore visibility
+                        if (part.userData.visible !== savedPart.visible) {
+                            part.userData.visible = savedPart.visible;
+                            part.visible = savedPart.visible;
+                        }
+                        
+                        // Restore lock
+                        part.userData.locked = savedPart.locked;
+                        
+                        // Note: Position/rotation restoration would need more complex handling
+                        // as it involves the actual mesh transforms
+                    }
+                });
+                
+                // Restore groups
+                groups = state.groups.map(g => ({
+                    name: g.name,
+                    parts: new Set(g.parts),
+                    color: g.color
+                }));
+                renderGroupSelector();
+                
+                // Restore selected group
+                if (state.selectedGroup) {
+                    const groupIndex = groups.findIndex(g => g.name === state.selectedGroup);
+                    if (groupIndex !== -1) {
+                        selectGroup(groupIndex);
+                    }
+                } else {
+                    selectGroup('');
+                }
+                
+                // Restore model rotation
+                modelGroup.rotation.set(
+                    state.modelRotation.x,
+                    state.modelRotation.y,
+                    state.modelRotation.z
+                );
+                
+                // Rebuild UI to reflect changes
+                rebuildUI();
+                
+            } finally {
+                isApplyingHistory = false;
+            }
+        }
+        
+        // Undo
+        function undo() {
+            if (historyIndex <= 0) {
+                showToast('⚠️ Nothing to undo');
+                return;
+            }
+            
+            historyIndex--;
+            const state = history[historyIndex];
+            applyState(state);
+            updateUndoRedoButtons();
+            
+            showToast(`↶ Undo (${history.length - historyIndex - 1} more available)`);
+            console.log(`↶ Undo to state ${historyIndex + 1}/${history.length}`);
+        }
+        
+        // Redo
+        function redo() {
+            if (historyIndex >= history.length - 1) {
+                showToast('⚠️ Nothing to redo');
+                return;
+            }
+            
+            historyIndex++;
+            const state = history[historyIndex];
+            applyState(state);
+            updateUndoRedoButtons();
+            
+            showToast(`↷ Redo (${historyIndex} more available)`);
+            console.log(`↷ Redo to state ${historyIndex + 1}/${history.length}`);
+        }
+        
+        // Update undo/redo button states
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            
+            if (undoBtn) {
+                undoBtn.disabled = historyIndex <= 0;
+                undoBtn.style.opacity = historyIndex <= 0 ? '0.5' : '1';
+                undoBtn.style.cursor = historyIndex <= 0 ? 'not-allowed' : 'pointer';
+            }
+            
+            if (redoBtn) {
+                redoBtn.disabled = historyIndex >= history.length - 1;
+                redoBtn.style.opacity = historyIndex >= history.length - 1 ? '0.5' : '1';
+                redoBtn.style.cursor = historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer';
+            }
+        }
+        
+        // Clear history (when loading new project)
+        function clearHistory() {
+            history = [];
+            historyIndex = -1;
+            updateUndoRedoButtons();
+            console.log('🗑️ History cleared');
+        }
+        
+        // Initialize history with current state
+        function initializeHistory() {
+            if (parts.length > 0) {
+                clearHistory();
+                saveState();
+                console.log('✓ History initialized');
+            }
+        }
+        
+        // END UNDO/REDO SYSTEM
+        
+        function resetRotation() {
+            modelGroup.rotation.set(0, 0, 0);
+            markAsModified();
+            showToast('✓ Model rotation reset');
+        }
+        
+        // Preset view functions
+        function setTopView() {
+            // Looking down from top
+            modelGroup.rotation.set(-Math.PI / 2, 0, 0); // Pitch down 90°
+            markAsModified();
+            showToast('👁️ Top view');
+        }
+        
+        function setBottomView() {
+            // Looking up from bottom
+            modelGroup.rotation.set(Math.PI / 2, 0, 0); // Pitch up 90°
+            markAsModified();
+            showToast('👁️ Bottom view');
+        }
+        
+        function setFrontView() {
+            // Default front view
+            modelGroup.rotation.set(0, 0, 0);
+            markAsModified();
+            showToast('👁️ Front view');
+        }
+        
+        function setBackView() {
+            // Rotate 180° to see back
+            modelGroup.rotation.set(0, Math.PI, 0);
+            markAsModified();
+            showToast('👁️ Back view');
+        }
+        
+        function setSideView() {
+            // Right side view
+            modelGroup.rotation.set(0, Math.PI / 2, 0); // Rotate 90° right
+            markAsModified();
+            showToast('👁️ Side view (right)');
+        }
+        
+        function setOtherSideView() {
+            // Left side view
+            modelGroup.rotation.set(0, -Math.PI / 2, 0); // Rotate 90° left
+            markAsModified();
+            showToast('👁️ Side view (left)');
+        }
+        
+        // 90-degree rotation functions
+        function rotateLeft90() {
+            modelGroup.rotation.y -= Math.PI / 2; // 90 degrees left
+            markAsModified();
+            showToast('↶ Rotated 90° left');
+        }
+        
+        function rotateRight90() {
+            modelGroup.rotation.y += Math.PI / 2; // 90 degrees right
+            markAsModified();
+            showToast('↷ Rotated 90° right');
+        }
+        
+        function rotateUp90() {
+            modelGroup.rotation.x -= Math.PI / 2; // 90 degrees up
+            markAsModified();
+            showToast('↑ Rotated 90° up');
+        }
+        
+        function rotateDown90() {
+            modelGroup.rotation.x += Math.PI / 2; // 90 degrees down
+            markAsModified();
+            showToast('↓ Rotated 90° down');
+        }
+        
+        // 15-degree fine rotation functions
+        function rotateLeft15() {
+            modelGroup.rotation.y -= Math.PI / 12; // 15 degrees left
+            markAsModified();
+            showToast('↶ Rotated 15° left');
+        }
+        
+        function rotateRight15() {
+            modelGroup.rotation.y += Math.PI / 12; // 15 degrees right
+            markAsModified();
+            showToast('↷ Rotated 15° right');
+        }
+        
+        function rotateUp15() {
+            modelGroup.rotation.x -= Math.PI / 12; // 15 degrees up
+            markAsModified();
+            showToast('↑ Rotated 15° up');
+        }
+        
+        function rotateDown15() {
+            modelGroup.rotation.x += Math.PI / 12; // 15 degrees down
+            markAsModified();
+            showToast('↓ Rotated 15° down');
+        }
+        
+        // 30-degree rotation functions
+        function rotateLeft30() {
+            modelGroup.rotation.y -= Math.PI / 6; // 30 degrees left
+            markAsModified();
+            showToast('↶ Rotated 30° left');
+        }
+        
+        function rotateRight30() {
+            modelGroup.rotation.y += Math.PI / 6; // 30 degrees right
+            markAsModified();
+            showToast('↷ Rotated 30° right');
+        }
+        
+        // 45-degree rotation functions
+        function rotateLeft45() {
+            modelGroup.rotation.y -= Math.PI / 4; // 45 degrees left
+            markAsModified();
+            showToast('↶ Rotated 45° left');
+        }
+        
+        function rotateRight45() {
+            modelGroup.rotation.y += Math.PI / 4; // 45 degrees right
+            markAsModified();
+            showToast('↷ Rotated 45° right');
+        }
+        
+        // 60-degree rotation functions
+        function rotateLeft60() {
+            modelGroup.rotation.y -= Math.PI / 3; // 60 degrees left
+            markAsModified();
+            showToast('↶ Rotated 60° left');
+        }
+        
+        function rotateRight60() {
+            modelGroup.rotation.y += Math.PI / 3; // 60 degrees right
+            markAsModified();
+            showToast('↷ Rotated 60° right');
+        }
+        
+        // Flip functions
+        function flipHorizontal() {
+            modelGroup.rotation.y += Math.PI; // 180 degrees
+            markAsModified();
+            showToast('↔ Flipped horizontal');
+        }
+        
+        function flipVertical() {
+            modelGroup.rotation.x += Math.PI; // 180 degrees
+            markAsModified();
+            showToast('↕ Flipped vertical');
         }
 
         function updatePartCount() {
@@ -5402,7 +6632,6 @@ Version: 1.1
             }, 3000);
         }
 
-        let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let isPanning = false;
 
@@ -5434,6 +6663,54 @@ Version: 1.1
                     return;
                 }
                 
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                // Check if Shift is held for part movement
+                if (e.shiftKey) {
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(parts);
+                    
+                    if (intersects.length > 0) {
+                        const clickedPart = intersects[0].object;
+                        
+                        // Check if part is locked
+                        if (clickedPart.userData.locked) {
+                            showToast('🔒 Part is locked - unlock to move');
+                            return;
+                        }
+                        
+                        draggedPart = clickedPart;
+                        const intersection = intersects[0].point;
+                        
+                        if (e.button === 0) {
+                            // Left click + Shift = horizontal movement (XZ plane)
+                            dragMode = 'horizontal';
+                            dragPlane.setFromNormalAndCoplanarPoint(
+                                camera.getWorldDirection(dragPlane.normal).negate(),
+                                intersection
+                            );
+                            canvas.style.cursor = 'move';
+                        } else if (e.button === 2) {
+                            // Right click + Shift = vertical movement (Y axis)
+                            dragMode = 'vertical';
+                            dragPlane.setFromNormalAndCoplanarPoint(
+                                new THREE.Vector3(1, 0, 0),
+                                intersection
+                            );
+                            canvas.style.cursor = 'ns-resize';
+                        }
+                        
+                        if (raycaster.ray.intersectPlane(dragPlane, dragOffset)) {
+                            dragOffset.sub(draggedPart.position);
+                        }
+                        
+                        return;
+                    }
+                }
+                
+                // Normal camera controls
                 if (e.button === 0) {
                     isDragging = true;
                 } else if (e.button === 2) {
@@ -5443,6 +6720,35 @@ Version: 1.1
             });
             
             canvas.addEventListener('mousemove', (e) => {
+                if (draggedPart) {
+                    // Part dragging mode
+                    const rect = canvas.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                    
+                    raycaster.setFromCamera(mouse, camera);
+                    
+                    if (raycaster.ray.intersectPlane(dragPlane, dragIntersection)) {
+                        if (dragMode === 'horizontal') {
+                            // Move in XZ plane (horizontal)
+                            draggedPart.position.x = dragIntersection.x - dragOffset.x;
+                            draggedPart.position.z = dragIntersection.z - dragOffset.z;
+                        } else if (dragMode === 'vertical') {
+                            // Move in Y axis (vertical)
+                            draggedPart.position.y = dragIntersection.y - dragOffset.y;
+                        }
+                        
+                        // Update stored position
+                        draggedPart.userData.position = {
+                            x: draggedPart.position.x,
+                            y: draggedPart.position.y,
+                            z: draggedPart.position.z
+                        };
+                    }
+                    return;
+                }
+                
+                // Normal camera controls
                 const deltaX = e.clientX - previousMousePosition.x;
                 const deltaY = e.clientY - previousMousePosition.y;
                 
@@ -5460,6 +6766,15 @@ Version: 1.1
             });
             
             canvas.addEventListener('mouseup', () => {
+                if (draggedPart) {
+                    // Save state for undo/redo
+                    markAsModified();
+                    showToast(`✓ Moved ${draggedPart.userData.name}`);
+                    canvas.style.cursor = 'default';
+                }
+                
+                draggedPart = null;
+                dragMode = null;
                 isDragging = false;
                 isPanning = false;
             });
@@ -5491,8 +6806,146 @@ Version: 1.1
                 const distanceFromOrigin = camera.position.length();
                 if (distanceFromOrigin < 10) {
                     camera.position.normalize().multiplyScalar(10);
-                } else if (distanceFromOrigin > 500) {
-                    camera.position.normalize().multiplyScalar(500);
+                } else if (distanceFromOrigin > 1000) {
+                    camera.position.normalize().multiplyScalar(1000);
+                }
+            });
+            
+            // Keyboard controls for rotation
+            document.addEventListener('keydown', (e) => {
+                // Check if user is typing in an input field
+                const activeElement = document.activeElement;
+                const isTyping = activeElement && (
+                    activeElement.tagName === 'INPUT' || 
+                    activeElement.tagName === 'TEXTAREA' ||
+                    activeElement.isContentEditable
+                );
+                
+                // Allow Undo/Redo shortcuts even when typing
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    undo();
+                    return;
+                }
+                if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+                    e.preventDefault();
+                    redo();
+                    return;
+                }
+                
+                // Skip other shortcuts if user is typing in an input field
+                if (isTyping) {
+                    return;
+                }
+                
+                const rotationSpeed = 0.05; // Rotation increment per key press
+                
+                // Preset views with number keys
+                if (e.key >= '1' && e.key <= '6') {
+                    e.preventDefault();
+                    switch(e.key) {
+                        case '1': setTopView(); return;
+                        case '2': setFrontView(); return;
+                        case '3': setSideView(); return;
+                        case '4': setBottomView(); return;
+                        case '5': setBackView(); return;
+                        case '6': setOtherSideView(); return;
+                    }
+                }
+                
+                // 15-degree rotations with Ctrl + Arrow keys
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            e.preventDefault();
+                            rotateLeft15();
+                            return;
+                        case 'ArrowRight':
+                            e.preventDefault();
+                            rotateRight15();
+                            return;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            rotateUp15();
+                            return;
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            rotateDown15();
+                            return;
+                    }
+                }
+                
+                // Snap rotations with Shift + Arrow keys
+                if (e.shiftKey) {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            e.preventDefault();
+                            rotateLeft90();
+                            return;
+                        case 'ArrowRight':
+                            e.preventDefault();
+                            rotateRight90();
+                            return;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            rotateUp90();
+                            return;
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            rotateDown90();
+                            return;
+                    }
+                }
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        modelGroup.rotation.y -= rotationSpeed;
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        modelGroup.rotation.y += rotationSpeed;
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        modelGroup.rotation.x -= rotationSpeed;
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        modelGroup.rotation.x += rotationSpeed;
+                        break;
+                    case 'q':
+                    case 'Q':
+                        // Rotate counterclockwise around Z axis (roll left)
+                        modelGroup.rotation.z -= rotationSpeed;
+                        break;
+                    case 'e':
+                    case 'E':
+                        // Rotate clockwise around Z axis (roll right)
+                        modelGroup.rotation.z += rotationSpeed;
+                        break;
+                    case 'r':
+                    case 'R':
+                        // Reset rotation
+                        resetRotation();
+                        break;
+                    case 'h':
+                    case 'H':
+                        // Flip horizontal
+                        flipHorizontal();
+                        break;
+                    case 'v':
+                    case 'V':
+                        // Flip vertical
+                        flipVertical();
+                        break;
+                    case 'm':
+                    case 'M':
+                        // Toggle both info overlay and control panel minimize/expand
+                        e.preventDefault();
+                        toggleInfoOverlay();
+                        toggleControlPanel();
+                        break;
                 }
             });
         }
@@ -5558,6 +7011,9 @@ Version: 1.1
 
         function onWindowResize() {
             const container = document.getElementById('canvas-container');
+            if (!container) {
+                return; // Silently return if container not found yet
+            }
             camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
@@ -5584,6 +7040,80 @@ Version: 1.1
             
             console.log('Cleanup complete');
         }
+
+        // Make functions globally accessible for HTML onclick handlers
+        window.scrollPartsToTop = scrollPartsToTop;
+        window.clearPartSearch = clearPartSearch;
+        window.filterParts = filterParts;
+        window.expandAllParts = expandAllParts;
+        window.collapseAllParts = collapseAllParts;
+        window.lockAllParts = lockAllParts;
+        window.unlockAllParts = unlockAllParts;
+        window.loadProject = loadProject;
+        window.saveProject = saveProject;
+        window.clearAll = clearAll;
+        window.exportImage = exportImage;
+        window.loadProjectFromURL = loadProjectFromURL;
+        window.loadGitHubProject = loadGitHubProject;
+        window.acceptDisclaimer = acceptDisclaimer;
+        window.declineDisclaimer = declineDisclaimer;
+        window.acceptAndLoadProject = acceptAndLoadProject;
+        window.hideLicense = hideLicense;
+        window.resetCamera = resetCamera;
+        window.frameModel = frameModel;
+        window.toggleMeasure = toggleMeasure;
+        window.undo = undo;
+        window.redo = redo;
+        window.toggleControlPanel = toggleControlPanel;
+        window.resetRotation = resetRotation;
+        window.setTopView = setTopView;
+        window.setFrontView = setFrontView;
+        window.setSideView = setSideView;
+        window.setBottomView = setBottomView;
+        window.setBackView = setBackView;
+        window.setOtherSideView = setOtherSideView;
+        window.rotateLeft90 = rotateLeft90;
+        window.rotateRight90 = rotateRight90;
+        window.rotateUp90 = rotateUp90;
+        window.rotateDown90 = rotateDown90;
+        window.rotateLeft15 = rotateLeft15;
+        window.rotateRight15 = rotateRight15;
+        window.rotateUp15 = rotateUp15;
+        window.rotateDown15 = rotateDown15;
+        window.rotateLeft30 = rotateLeft30;
+        window.rotateRight30 = rotateRight30;
+        window.rotateLeft45 = rotateLeft45;
+        window.rotateRight45 = rotateRight45;
+        window.rotateLeft60 = rotateLeft60;
+        window.rotateRight60 = rotateRight60;
+        window.flipHorizontal = flipHorizontal;
+        window.flipVertical = flipVertical;
+        window.createGroup = createGroup;
+        window.deleteGroup = deleteGroup;
+        window.colorAllGroupsRandomly = colorAllGroupsRandomly;
+        window.adjustValue = adjustValue;
+        window.navigateToFolder = navigateToFolder;
+        window.randomizeColors = randomizeColors;
+        window.refreshGitHubBrowser = refreshGitHubBrowser;
+        window.removePart = removePart;
+        window.resetTransform = resetTransform;
+        window.updateTransform = updateTransform;
+        window.selectGroup = selectGroup;
+        window.setTransformDirect = setTransformDirect;
+        window.updateColorFromDropdown = updateColorFromDropdown;
+        window.updateGroupColorFromDropdown = updateGroupColorFromDropdown;
+        window.focusOnPart = focusOnPart;
+        window.togglePartSelection = togglePartSelection;
+        window.togglePartCollapse = togglePartCollapse;
+        window.toggleLock = toggleLock;
+        window.toggleVisibility = toggleVisibility;
+        window.toggleTransform = toggleTransform;
+        window.saveGitHubSettings = saveGitHubSettings;
+        window.testGitHubPath = testGitHubPath;
+        window.showDisclaimer = showDisclaimer;
+        window.applyColorToGroup = applyColorToGroup;
+        window.loadSelectedGitHubProject = loadSelectedGitHubProject;
+        window.toggleInfoOverlay = toggleInfoOverlay;
 
         window.addEventListener('load', init);
         
