@@ -2233,9 +2233,9 @@
         
         function resetGitHubFolderState() {
             // Clear GitHub folder state to prevent wrong license being applied
+            // Note: licenseAlreadyShown is NOT reset here - it's managed by the license display logic
             currentFolderLicense = null;
             currentFolderPath = null;
-            licenseAlreadyShown = false;
             console.log('🔄 GitHub folder state reset');
         }
         
@@ -2343,14 +2343,16 @@
         // FOLDER LICENSE FUNCTIONS (GitHub-based)
 
         // Show license modal
-        function showLicense(licenseText, title = "Model License") {
+        function showLicense(licenseText, title = "Model License", isPostLoad = false) {
             console.log('📄 Showing license modal:', title);
             console.log('License text length:', licenseText ? licenseText.length : 'characters');
             console.log('licenseAlreadyShown flag:', licenseAlreadyShown);
+            console.log('Is post-load (project already loaded):', isPostLoad);
             
             const modal = document.getElementById('license-modal');
             const body = document.getElementById('license-body');
             const titleEl = document.querySelector('.license-title');
+            const acceptBtn = document.getElementById('license-accept-btn');
             
             if (titleEl) {
                 titleEl.textContent = `📄 ${title}`;
@@ -2358,6 +2360,19 @@
             
             if (body) {
                 body.textContent = licenseText || "No license information available.";
+            }
+            
+            // Update button based on whether project is already loaded
+            if (acceptBtn) {
+                if (isPostLoad) {
+                    // Project already loaded - just acknowledge the license
+                    acceptBtn.textContent = 'I Understand';
+                    acceptBtn.onclick = hideLicense;
+                } else {
+                    // Pre-load - need to accept and load
+                    acceptBtn.textContent = 'I Understand & Load Project';
+                    acceptBtn.onclick = acceptAndLoadProject;
+                }
             }
             
             if (modal) {
@@ -2846,7 +2861,7 @@ Version: 1.1
                     if (projectData.license) {
                         console.log('✓ License found in project');
                         setTimeout(() => {
-                            showLicense(projectData.license, `${projectData.projectName} - License`);
+                            showLicense(projectData.license, `${projectData.projectName} - License`, true); // true = project already loaded
                         }, 500);
                     }
                     
@@ -3191,7 +3206,7 @@ Version: 1.1
                 if (projectData.license && !licenseAlreadyShown) {
                     console.log('✓ License found in project, showing embedded license');
                     setTimeout(() => {
-                        showLicense(projectData.license, `${projectData.projectName} - License`);
+                        showLicense(projectData.license, `${projectData.projectName} - License`, true); // true = project already loaded
                         // Reset flag AFTER showing license
                         setTimeout(() => {
                             licenseAlreadyShown = false;
@@ -5305,7 +5320,7 @@ Version: 1.1
                     if (projectData.license) {
                         console.log('✓ License found in project');
                         setTimeout(() => {
-                            showLicense(projectData.license, `${projectData.projectName} - License`);
+                            showLicense(projectData.license, `${projectData.projectName} - License`, true); // true = project already loaded
                         }, 500);
                     }
                     
@@ -6139,7 +6154,6 @@ Version: 1.1
         }
         
         // Toggle control panel minimize/expand
-        let controlPanelMinimized = false;
         function toggleControlPanel() {
             const rotateSection = document.getElementById('rotate-section');
             const viewContent = document.getElementById('view-controls-content');
@@ -6147,37 +6161,19 @@ Version: 1.1
             
             // Check if elements exist - if not, silently return (panels might not be loaded yet)
             if (!rotateSection || !viewContent || !panel) {
+                console.warn('⚠️ Some elements not found, aborting toggle');
                 return;
             }
             
-            // Get toggle button - from event if clicked, or find it if keyboard triggered
-            let toggleBtn = null;
-            try {
-                if (typeof event !== 'undefined' && event && event.target) {
-                    toggleBtn = event.target;
-                } else {
-                    // Find the button when triggered by keyboard
-                    if (panel) {
-                        toggleBtn = panel.querySelector('button[onclick*="toggleControlPanel"]');
-                    }
-                }
-            } catch (e) {
-                // Silently handle error
-            }
+            // Determine current state from DOM (not from variable)
+            const isCurrentlyMinimized = rotateSection.style.display === 'none';
+            console.log('🎛️ toggleControlPanel - Current DOM state:', isCurrentlyMinimized ? 'MINIMIZED' : 'EXPANDED');
             
-            controlPanelMinimized = !controlPanelMinimized;
+            // Get toggle button
+            let toggleBtn = panel.querySelector('button[onclick*="toggleControlPanel"]');
             
-            if (controlPanelMinimized) {
-                // Minimize
-                rotateSection.style.display = 'none';
-                viewContent.style.display = 'none';
-                panel.style.maxWidth = 'auto';
-                if (toggleBtn) {
-                    toggleBtn.textContent = '+';
-                    toggleBtn.title = 'Expand';
-                }
-            } else {
-                // Expand
+            if (isCurrentlyMinimized) {
+                // Currently minimized → Expand
                 rotateSection.style.display = 'block';
                 viewContent.style.display = 'block';
                 panel.style.maxWidth = '240px';
@@ -6185,37 +6181,51 @@ Version: 1.1
                     toggleBtn.textContent = '−';
                     toggleBtn.title = 'Minimize';
                 }
+                console.log('✅ Control panel EXPANDED');
+            } else {
+                // Currently expanded → Minimize
+                rotateSection.style.display = 'none';
+                viewContent.style.display = 'none';
+                panel.style.maxWidth = 'auto';
+                if (toggleBtn) {
+                    toggleBtn.textContent = '+';
+                    toggleBtn.title = 'Expand';
+                }
+                console.log('✅ Control panel MINIMIZED');
             }
         }
         
         // Info overlay toggle
-        let infoOverlayMinimized = false;
-        
         function toggleInfoOverlay() {
             const overlay = document.getElementById('info-overlay');
             const toggleBtn = overlay ? overlay.querySelector('.info-toggle-btn') : null;
             
             // If overlay doesn't exist, silently return (might not be loaded yet)
             if (!overlay) {
+                console.warn('⚠️ Info overlay not found, aborting toggle');
                 return;
             }
             
-            infoOverlayMinimized = !infoOverlayMinimized;
+            // Determine current state from DOM (not from variable)
+            const isCurrentlyMinimized = overlay.classList.contains('minimized');
+            console.log('📋 toggleInfoOverlay - Current DOM state:', isCurrentlyMinimized ? 'MINIMIZED' : 'EXPANDED');
             
-            if (infoOverlayMinimized) {
-                // Minimize
-                overlay.classList.add('minimized');
-                if (toggleBtn) {
-                    toggleBtn.textContent = '+';
-                    toggleBtn.title = 'Expand';
-                }
-            } else {
-                // Expand
+            if (isCurrentlyMinimized) {
+                // Currently minimized → Expand
                 overlay.classList.remove('minimized');
                 if (toggleBtn) {
                     toggleBtn.textContent = '−';
                     toggleBtn.title = 'Minimize';
                 }
+                console.log('✅ Info overlay EXPANDED');
+            } else {
+                // Currently expanded → Minimize
+                overlay.classList.add('minimized');
+                if (toggleBtn) {
+                    toggleBtn.textContent = '+';
+                    toggleBtn.title = 'Expand';
+                }
+                console.log('✅ Info overlay MINIMIZED');
             }
         }
         
@@ -6833,6 +6843,15 @@ Version: 1.1
                     return;
                 }
                 
+                // Allow M key (minimize panels) even when typing
+                if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    console.log('⌨️ M key pressed - toggling both panels');
+                    toggleInfoOverlay();
+                    toggleControlPanel();
+                    return;
+                }
+                
                 // Skip other shortcuts if user is typing in an input field
                 if (isTyping) {
                     return;
@@ -6938,13 +6957,6 @@ Version: 1.1
                     case 'V':
                         // Flip vertical
                         flipVertical();
-                        break;
-                    case 'm':
-                    case 'M':
-                        // Toggle both info overlay and control panel minimize/expand
-                        e.preventDefault();
-                        toggleInfoOverlay();
-                        toggleControlPanel();
                         break;
                 }
             });
